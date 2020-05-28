@@ -3,12 +3,10 @@ Created on Aug 31, 2017
 
 @author: Michal.Busta at gmail.com
 '''
-import numpy as np
 import torch
-from torch.autograd import Variable
 
-def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
-  v = torch.from_numpy(x).type(torch.FloatTensor)
+def np_to_variable(x, is_cuda=True, dtype=torch.float32):
+  v = torch.from_numpy(x).type(dtype)
   if is_cuda:
       v = v.cuda()
   return v

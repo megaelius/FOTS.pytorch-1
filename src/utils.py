@@ -15,7 +15,7 @@ import cv2
 import os
 import PIL
 from tools.data_gen import generate_rbox, generate_rbox2
-from tools.data_gen import load_gt_annoataion
+from tools.data_gen import load_gt_annotation
 from tools.data_gen import get_images
 from tools.data_gen import random_rotation, random_perspective
 import torchvision.transforms as transforms
@@ -42,7 +42,7 @@ class strLabelConverter(object):
         self._ignore_case = ignore_case
         if self._ignore_case:
             alphabet = alphabet.lower()
-        self.alphabet = alphabet + '-'  # for `-1` index
+        self.alphabet = alphabet + '-'    # for `-1` index
 
         self.dict = {}
         for i, char in enumerate(alphabet):
@@ -124,7 +124,7 @@ class strLabelConverterForCTC(object):
     def __init__(self, alphabet, sep):
         self.sep = sep
         self.alphabet = alphabet.split(sep)
-        self.alphabet.append('-')  # for `-1` index
+        self.alphabet.append('-')    # for `-1` index
 
         self.dict = {}
         for i, item in enumerate(self.alphabet):
@@ -240,7 +240,7 @@ def loadData(v, data):
 def prettyPrint(v):
     print('Size {0}, Type: {1}'.format(str(v.size()), v.data.type()))
     print('| Max: %f | Min: %f | Mean: %f' % (v.max().data[0], v.min().data[0],
-                                              v.mean().data[0]))
+                                                v.mean().data[0]))
 
 
 def assureRatio(img):
@@ -261,14 +261,14 @@ class halo():
     '''
 
     def __init__(self, nums, u=0, sigma=0.2, prob=0.5):
-        self.u = u  # 均值μ
-        self.sig = math.sqrt(sigma)  # 标准差δ
+        self.u = u    # 均值μ
+        self.sig = math.sqrt(sigma)    # 标准差δ
         self.nums = nums
         self.prob = prob
 
     def create_kernel(self, maxh=32, maxw=50):
-        height_scope = [10, maxh]  # 高度范围     随机生成高斯
-        weight_scope = [20, maxw]  # 宽度范围
+        height_scope = [10, maxh]    # 高度范围     随机生成高斯
+        weight_scope = [20, maxw]    # 宽度范围
 
         x = np.linspace(self.u - 3 * self.sig, self.u + 3 * self.sig, random.randint(*height_scope))
         y = np.linspace(self.u - 3 * self.sig, self.u + 3 * self.sig, random.randint(*weight_scope))
@@ -282,18 +282,18 @@ class halo():
 
     def __call__(self, img):
         if random.random() < self.prob:
-            Gauss_map = self.create_kernel(32, 60)  # 初始化一个高斯核,32为高度方向的最大值，60为w方向
+            Gauss_map = self.create_kernel(32, 60)    # 初始化一个高斯核,32为高度方向的最大值，60为w方向
             img1 = np.asarray(img)
-            img1.flags.writeable = True  # 将数组改为读写模式
-            nums = random.randint(1, self.nums)  # 随机生成nums个光点
+            img1.flags.writeable = True    # 将数组改为读写模式
+            nums = random.randint(1, self.nums)    # 随机生成nums个光点
             img1 = img1.astype(np.float)
             # print(nums)
             for i in range(nums):
                 img_h, img_w = img1.shape
-                pointx = random.randint(0, img_h - 10)  # 在原图中随机找一个点
+                pointx = random.randint(0, img_h - 10)    # 在原图中随机找一个点
                 pointy = random.randint(0, img_w - 10)
 
-                h, w = Gauss_map.shape  # 判断是否超限
+                h, w = Gauss_map.shape    # 判断是否超限
                 endx = pointx + h
                 endy = pointy + w
 
@@ -306,7 +306,7 @@ class halo():
 
                 # 加上不均匀光照
                 img1[pointx:endx, pointy:endy] = img1[pointx:endx, pointy:endy] + Gauss_map * 255.0
-            img1[img1 > 255.0] = 255.0  # 进行限幅，不然uint8会从0开始重新计数
+            img1[img1 > 255.0] = 255.0    # 进行限幅，不然uint8会从0开始重新计数
             img = img1
         return Image.fromarray(np.uint8(img))
 
@@ -352,8 +352,8 @@ class RandomBrightness(object):
         if random.random() < self.prob:
             hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
             h, s, v = cv2.split(hsv)
-            adjust = random.choice([0.5, 0.7, 0.9, 1.2, 1.5, 1.7])  # 随机选择一个
-            # adjust = random.choice([1.2, 1.5, 1.7, 2.0])      # 随机选择一个
+            adjust = random.choice([0.5, 0.7, 0.9, 1.2, 1.5, 1.7])    # 随机选择一个
+            # adjust = random.choice([1.2, 1.5, 1.7, 2.0])        # 随机选择一个
             v = v * adjust
             v = np.clip(v, 0, 255).astype(hsv.dtype)
             hsv = cv2.merge((h, s, v))
@@ -398,26 +398,26 @@ def process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training):
             gt = np.asarray(gts)
             center = (gt[:, 0, :] + gt[:, 1, :] + gt[:, 2, :] + gt[:, 3, :]) / 4        # 求中心点
             dw = gt[:, 2, :] - gt[:, 1, :]
-            dh =  gt[:, 1, :] - gt[:, 0, :] 
+            dh =    gt[:, 1, :] - gt[:, 0, :] 
             poww = pow(dw, 2)
             powh = pow(dh, 2)
             w = np.sqrt(poww[:, 0] + poww[:,1])
-            h = np.sqrt(powh[:,0] + powh[:,1])  + random.randint(-2, 2)
+            h = np.sqrt(powh[:,0] + powh[:,1])    + random.randint(-2, 2)
             angle_gt = ( np.arctan2((gt[:,2,1] - gt[:,1,1]), gt[:,2,0] - gt[:,1,0]) + np.arctan2((gt[:,3,1] - gt[:,0,1]), gt[:,3,0] - gt[:,0,0]) ) / 2        # 求角度
-            angle_gt = -angle_gt / 3.1415926535 * 180                                   # 需要加个负号
+            angle_gt = -angle_gt / 3.1415926535 * 180                                     # 需要加个负号
 
             # 10. 对每个rroi进行判断是否用于训练
             for gt_id in range(0, len(gts)):
                 
-                gt_txt = lbs[gt_id]                       # 文字判断
+                gt_txt = lbs[gt_id]                         # 文字判断
                 if gt_txt.startswith('##'):
                     continue
                 
-                gt = gts[gt_id]                           # 标注信息判断
+                gt = gts[gt_id]                             # 标注信息判断
                 if gt[:, 0].max() > im_data.size(3) or gt[:, 1].max() > im_data.size(2) or gt.min() < 0:
                     continue
                 
-                rrois.append([kk, center[gt_id][0], center[gt_id][1], h[gt_id], w[gt_id], angle_gt[gt_id]])   # 将标注的rroi写入
+                rrois.append([kk, center[gt_id][0], center[gt_id][1], h[gt_id], w[gt_id], angle_gt[gt_id]])     # 将标注的rroi写入
                 labels.append(gt_txt)
 
     # labels = labels[0]
@@ -432,7 +432,7 @@ def process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training):
     maxratio = maxratio.max().item()
     pooled_width = math.ceil(pooled_height * maxratio)
 
-    roipool = _RRoiAlign(pooled_height, pooled_width, 1.0)  # 声明类
+    roipool = _RRoiAlign(pooled_height, pooled_width, 1.0)    # 声明类
     pooled_feat = roipool(im_data, rois.view(-1, 6))
 
     # 13.1 显示所有的crop区域
@@ -464,7 +464,7 @@ def process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training):
     if training:
         preds = net.ocr_forward(pooled_feat)
 
-        preds_size = Variable(torch.IntTensor([preds.size(0)] * preds.size(1)))       # 求ctc loss
+        preds_size = Variable(torch.IntTensor([preds.size(0)] * preds.size(1)))         # 求ctc loss
         res = ctc_loss(preds, text, preds_size, label_length) / preds.size(1)    # 求一个平均
     else:
         labels_pred = net.ocr_forward(pooled_feat)
@@ -519,7 +519,7 @@ class ImgDataset(Dataset):
         text = [per_label[1].lstrip(), per_label[6].lstrip()]
 
 
-        return img, roi, text          # gt_box的标注信息为x1,y1,x2,y2, 返回一个名字
+        return img, roi, text            # gt_box的标注信息为x1,y1,x2,y2, 返回一个名字
 
 
 class ImgDataset2(Dataset):
@@ -563,7 +563,7 @@ class ImgDataset2(Dataset):
 
         text = [per_label[1].lstrip(), per_label[6].lstrip()]
 
-        return img, roi, text  # gt_box的标注信息为x1,y1,x2,y2, 返回一个名字
+        return img, roi, text    # gt_box的标注信息为x1,y1,x2,y2, 返回一个名字
 
 
 def own_collate(batch):
@@ -591,7 +591,7 @@ class E2Edataset(Dataset):
 
         self.transform = transforms.Compose([
                     transforms.ColorJitter(.3,.3,.3,.3),
-                    transforms.RandomGrayscale(p=0.1)  ])
+                    transforms.RandomGrayscale(p=0.1)    ])
         self.input_size = input_size
         self.in_train = in_train
 
@@ -608,14 +608,14 @@ class E2Edataset(Dataset):
         txt_fn_gt = '{0}/gt_{1}'.format(os.path.dirname(im_name), base_name)
 
         # 载入标注信息
-        text_polys, text_tags, labels_txt = load_gt_annoataion(txt_fn_gt, txt_fn_gt.find('/icdar-2015-Ch4/') != -1)
+        text_polys, text_tags, labels_txt = load_gt_annotation(txt_fn_gt, txt_fn_gt.find('/icdar-2015-Ch4/') != -1)
 
         pim = PIL.Image.fromarray(np.uint8(im))
         if self.transform:
             pim = self.transform(pim)
         im = np.array(pim)
 
-        text_polys, text_tags, labels_txt = load_gt_annoataion(txt_fn_gt, txt_fn_gt.find('/icdar-2015-Ch4/') != -1)
+        text_polys, text_tags, labels_txt = load_gt_annotation(txt_fn_gt, txt_fn_gt.find('/icdar-2015-Ch4/') != -1)
 
         new_h, new_w, _ = im.shape
         score_map, geo_map, training_mask, gt_idx, gt_out, labels_out = generate_rbox(im, (new_h, new_w), text_polys, text_tags, labels_txt, vis=False)
@@ -646,9 +646,9 @@ class E2Edataset(Dataset):
         if random.uniform(0, 100) < 30:
             im = random_perspective(im, text_polys)         # ？？？随机干哈
 
-          #im = random_crop(im, text_polys, vis=False)
+            #im = random_crop(im, text_polys, vis=False)
 
-        scalex = random.uniform(0.5, 2)                   # 宽度和高度方向上随机比例
+        scalex = random.uniform(0.5, 2)                     # 宽度和高度方向上随机比例
         scaley = scalex * random.uniform(0.8, 1.2)
         im = cv2.resize(im, dsize=(int(im.shape[1] * scalex), int(im.shape[0] * scaley)))
         text_polys[:, :, 0] *= scalex

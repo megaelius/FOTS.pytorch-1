@@ -22,7 +22,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 # from torch_baidu_ctc import ctc_loss, CTCLoss
-from warpctc_pytorch import CTCLoss
+from torch.nn import CTCLoss
 from tools.ocr_test_utils import print_seq_ext
 from rroi_align.modules.rroi_align import _RRoiAlign
 from src.utils import strLabelConverter

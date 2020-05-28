@@ -1,2 +1,6 @@
+#pragma once
+
+#include <torch/extension.h>
+
 int roi_pooling_forward(int pooled_height, int pooled_width, float spatial_scale,
-                        THFloatTensor * features, THFloatTensor * rois, THFloatTensor * output);
+                                                torch::Tensor features, torch::Tensor rois, torch::Tensor output);

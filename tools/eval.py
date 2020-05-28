@@ -92,15 +92,15 @@ def load_gt(p, is_icdar = False):
       delim = ''
       start_idx = 9
       if is_icdar:
-        start_idx = 8
+    start_idx = 8
       
       for idx in range(start_idx, len(line)):
-        gt_txt += delim + line[idx]
-        delim = ','
-        
+    gt_txt += delim + line[idx]
+    delim = ','
+    
       text_polys.append([x4, y4, x1, y1, x2, y2, x3, y3])
       text_line = gt_txt.strip()
-        
+    
       
       text_gts.append(text_line) 
      
@@ -152,7 +152,7 @@ def evaluate_image(img, detections, gt_rect, gt_txts, iou_th=0.5, iou_th_vis=0.5
   '''
   Summary : Returns end-to-end true-positives, detection true-positives, number of GT to be considered for eval (len > 2).
   Description : For each predicted bounding-box, comparision is made with each GT entry. Values of number of end-to-end true
-                positives, number of detection true positives, number of GT entries to be considered for evaluation are computed.
+        positives, number of detection true positives, number of GT entries to be considered for evaluation are computed.
   
   Parameters
   ----------
@@ -204,7 +204,7 @@ def evaluate_image(img, detections, gt_rect, gt_txts, iou_th=0.5, iou_th_vis=0.5
     det_text = det[1] # Predicted transcription for bounding-box
     
     for gt_no in range(len(gt_rect)):
-        
+    
       gtbox = gt_rect[gt_no]
       txt = gt_txts[gt_no] # GT transcription for given GT bounding-box
       gtbox = np.array(gtbox, dtype="int")
@@ -224,30 +224,30 @@ def evaluate_image(img, detections, gt_rect, gt_txts, iou_th=0.5, iou_th_vis=0.5
       # 2). Visualize the predicted-bounding box if transcription matches the GT and condition 1. holds
       # 3). Visualize the predicted-bounding box if transcription matches and IoU with GT is less than iou_th_vis and 1. and 2. hold
       if ratio > iou_th:
-        if not gt_no in gt_to_detection:
-          gt_to_detection[gt_no] = [0, 0]
+    if not gt_no in gt_to_detection:
+      gt_to_detection[gt_no] = [0, 0]
+      
+    edit_dist = editdistance.eval(det_text.lower(), txt.lower())
+    if edit_dist <= 1:
+      gt_matches_ed1[gt_no] = 1
+      draw_box_points(img, box, color = (0, 128, 0), thickness=2)
+        
+    if edit_dist == 0: #det_text.lower().find(txt.lower()) != -1:
+      draw_box_points(img, box, color = (0, 255, 0), thickness=2)
+      gt_matches[gt_no] = 1 # Change this parameter to 1 when predicted transcription is correct.
+      
+      if ratio < iou_th_vis:
+          #draw_box_points(draw, box, color = (255, 255, 255), thickness=2)
+          #cv2.imshow('draw', draw) 
+          #cv2.waitKey(0)
+          pass
+        
+    tupl = gt_to_detection[gt_no] 
+    if tupl[0] < ratio:
+      tupl[0] = ratio 
+      tupl[1] = i 
+      detection_to_gt[i] = [gt_no, ratio, edit_dist]  
           
-        edit_dist = editdistance.eval(det_text.lower(), txt.lower())
-        if edit_dist <= 1:
-          gt_matches_ed1[gt_no] = 1
-          draw_box_points(img, box, color = (0, 128, 0), thickness=2)
-            
-        if edit_dist == 0: #det_text.lower().find(txt.lower()) != -1:
-          draw_box_points(img, box, color = (0, 255, 0), thickness=2)
-          gt_matches[gt_no] = 1 # Change this parameter to 1 when predicted transcription is correct.
-          
-          if ratio < iou_th_vis:
-              #draw_box_points(draw, box, color = (255, 255, 255), thickness=2)
-              #cv2.imshow('draw', draw) 
-              #cv2.waitKey(0)
-              pass
-                
-        tupl = gt_to_detection[gt_no] 
-        if tupl[0] < ratio:
-          tupl[0] = ratio 
-          tupl[1] = i 
-          detection_to_gt[i] = [gt_no, ratio, edit_dist]  
-                  
   # Count the number of end-to-end and detection true-positives
   for gt_no in range(gt_matches.shape[0]):
     gt = gt_matches[gt_no]
@@ -261,19 +261,19 @@ def evaluate_image(img, detections, gt_rect, gt_txts, iou_th=0.5, iou_th_vis=0.5
     if len(txt) >= eval_text_length and not txt.startswith('##'):
       gt_e2e += 1
       if gt == 1:
-        tp_e2e += 1
+    tp_e2e += 1
       if gt_ed1 == 1:
-        tp_e2e_ed1 += 1
+    tp_e2e_ed1 += 1
+    
         
-            
     if gt_no in gt_to_detection:
       tupl = gt_to_detection[gt_no] 
       if tupl[0] > iou_th_eval: # Increment detection true-positive, if IoU is greater than iou_th_eval
-        if len(txt) >= eval_text_length and not txt.startswith('##'):
-          tp += 1   
+    if len(txt) >= eval_text_length and not txt.startswith('##'):
+      tp += 1   
       #else:
       #  draw_box_points(img, gtbox, color = (255, 255, 255), thickness=2)
-        
+    
   for i in range(0, len(detections)):  
     det = detections[i]
     box =  det[0] # Predicted bounding-box parameters
@@ -285,9 +285,9 @@ def evaluate_image(img, detections, gt_rect, gt_txts, iou_th=0.5, iou_th_vis=0.5
     else:
       [gt_no, ratio, edit_dist] = detection_to_gt[i]
       if edit_dist > 0:
-        draw_box_points(img, box, color = (255, 0, 0), thickness=2)
-            
-  #cv2.imshow('draw', draw)             
+    draw_box_points(img, box, color = (255, 0, 0), thickness=2)
+        
+  #cv2.imshow('draw', draw)         
   return tp, tp_e2e, gt_e2e, tp_e2e_ed1, detection_to_gt 
   
 from PIL import Image
@@ -340,10 +340,10 @@ def process_splits(trans, word_splits, conf, splits, start, ctc_f, rot_mat, angl
     end_f = splits[0, s]
     if s < len(spl) - 1:
       try:
-        if splits[0, s] > start_f:
-            end_f = splits[0, s] # New ending point of bounding-box transcription
+    if splits[0, s] > start_f:
+        end_f = splits[0, s] # New ending point of bounding-box transcription
       except IndexError:
-        pass
+    pass
     scalex = w / float(ctc_f.shape[1])
     poss = start_f * scalex
     pose = (end_f + 2) * scalex
@@ -423,11 +423,11 @@ if __name__ == '__main__':
   
     for img_name in sorted(images):
       try:
-        num = int( os.path.basename(img_name).replace('ts_', "").replace("img_", "").replace('.jpg', ""))
-        nums.append( (num,  img_name) )
+    num = int( os.path.basename(img_name).replace('ts_', "").replace("img_", "").replace('.jpg', ""))
+    nums.append( (num,  img_name) )
       except:
-        nums.append( (image_no,  img_name) )
-        image_no += 1
+    nums.append( (image_no,  img_name) )
+    image_no += 1
       
     for tp in sorted(nums, key=lambda images: images[0]):
       num = tp[0]
@@ -435,16 +435,16 @@ if __name__ == '__main__':
       base_nam = os.path.basename(img_name)
       
       if args.evaluate == 1:
-        res_gt = base_nam.replace(".jpg", '.txt').replace(".png", '.txt')
-        res_gt = '{0}/gt_{1}'.format(args.images_dir, res_gt)
-        if not os.path.exists(res_gt):
-          res_gt = base_nam.replace(".jpg", '.txt').replace("_", "")
-          res_gt = '{0}/gt_{1}'.format(args.images_dir, res_gt)
-          if not os.path.exists(res_gt):
-            print('missing! {0}'.format(res_gt))
-            gt_rect, gt_txts = [], []
-            #continue
-        gt_rect, gt_txts  = load_gt(res_gt)
+    res_gt = base_nam.replace(".jpg", '.txt').replace(".png", '.txt')
+    res_gt = '{0}/gt_{1}'.format(args.images_dir, res_gt)
+    if not os.path.exists(res_gt):
+      res_gt = base_nam.replace(".jpg", '.txt').replace("_", "")
+      res_gt = '{0}/gt_{1}'.format(args.images_dir, res_gt)
+      if not os.path.exists(res_gt):
+        print('missing! {0}'.format(res_gt))
+        gt_rect, gt_txts = [], []
+        #continue
+    gt_rect, gt_txts  = load_gt(res_gt)
       
       print(img_name)
       
@@ -483,9 +483,9 @@ if __name__ == '__main__':
       #iou = cv2.erode(iou, kernel,iterations = 1)
       #iou = cv2.blur(iou, (3, 3))
       if args.debug == 1:
-        cv2.imshow('iou', iou)
-        #cv2.imshow('ioud', ioud)
-        cv2.imshow('iou_pred1', iou_pred1)
+    cv2.imshow('iou', iou)
+    #cv2.imshow('ioud', ioud)
+    cv2.imshow('iou_pred1', iou_pred1)
       
       
       size = 3
@@ -494,9 +494,9 @@ if __name__ == '__main__':
       mask = (iou == image_max)
       iou2 = iou * mask
       
-        
+    
       if args.debug == 1:
-        cv2.imshow('iou2', iou2)
+    cv2.imshow('iou2', iou2)
       
       detections = get_boxes(iou, rbox, angle_pred[0].data.cpu()[0].numpy(), args.segm_thresh)
       #detectionsd = get_boxes(iou_pred1, rboxd, angle_pred[1].data.cpu()[0].numpy(), args.segm_thresh, iou_thresh=0.2)
@@ -506,15 +506,15 @@ if __name__ == '__main__':
       
       detectionso = np.copy(detections)
       if len(detections) > 0:
-        detections[:, 0] /= im_scalex
-        detections[:, 2] /= im_scalex
-        detections[:, 4] /= im_scalex
-        detections[:, 6] /= im_scalex
-        
-        detections[:, 1] /= im_scaley
-        detections[:, 3] /= im_scaley
-        detections[:, 5] /= im_scaley
-        detections[:, 7] /= im_scaley
+    detections[:, 0] /= im_scalex
+    detections[:, 2] /= im_scalex
+    detections[:, 4] /= im_scalex
+    detections[:, 6] /= im_scalex
+    
+    detections[:, 1] /= im_scaley
+    detections[:, 3] /= im_scaley
+    detections[:, 5] /= im_scaley
+    detections[:, 7] /= im_scaley
       
       
       draw = np.copy(img)
@@ -526,238 +526,238 @@ if __name__ == '__main__':
       
       font = ImageFont.truetype("Arial-Unicode-Regular.ttf", 16)
       box_no = 0
-        
+    
     
       res_file = os.path.join(args.out_dir,  'res_img_{num:05d}.txt'.format(num=num))
       res_file = open(res_file, 'w')
       
       for bid, box in enumerate(detections):      
       
-        boxo = detectionso[bid]
-        score = boxo[8]
-        boxr = boxo[0:8].reshape(-1, 2)
-        box_area = area( boxr.reshape(8) )
-        
-        conf_factor = score / box_area
-        #if conf_factor < 0.1:
-        #  continue
-        
-        boxr2 = box[0:8].reshape(-1, 2)
-        boxr2[boxr2 < 0] = 0
-        if boxr2[:, 0].max() > img.shape[1]:
-          continue
-        if boxr2[:, 1].max() > img.shape[0]:
-          continue
-        
-        center = (boxr[0, :] + boxr[1, :] + boxr[2, :] + boxr[3, :]) / 4
-        
-        dw = boxr[2, :] - boxr[1, :]
-        dw2 = boxr[0, :] - boxr[3, :]
-        dh =  boxr[1, :] - boxr[0, :]
-        dh2 =  boxr[3, :] - boxr[2, :]
+    boxo = detectionso[bid]
+    score = boxo[8]
+    boxr = boxo[0:8].reshape(-1, 2)
+    box_area = area( boxr.reshape(8) )
     
-        h = math.sqrt(dh[0] * dh[0] + dh[1] * dh[1]) + 1
-        h2 = math.sqrt(dh2[0] * dh2[0] + dh2[1] * dh2[1]) + 1
-        h = (h + h2) / 2
-        w = math.sqrt(dw[0] * dw[0] + dw[1] * dw[1])
-        w2 = math.sqrt(dw2[0] * dw2[0] + dw2[1] * dw2[1])
-        w = (w + w2) / 2
-        
-        if (( h - 1 ) / im_scaley ) < min_height:
-          print('too small detection')
-          continue
-        
-        input_W = im_data.size(3)
-        input_H = im_data.size(2)
-        target_h = 44  
-          
-        scale = target_h / h
-        target_gw = int(w * scale + target_h / 4)  
-        target_gw = max(8, int(round(target_gw / 4)) * 4) 
-        xc = center[0] 
-        yc = center[1] 
-        w2 = w 
-        h2 = h 
-        
-        angle = math.atan2((boxr[2][1] - boxr[1][1]), boxr[2][0] - boxr[1][0])
-        angle2 = math.atan2((boxr[3][1] - boxr[0][1]), boxr[3][0] - boxr[0][0])
-        angle = (angle + angle2) / 2 
-        
-        #show pooled image in image layer
-        scalex = (w2 + h2 / 4) / input_W 
-        scaley = h2 / input_H 
-      
-        th11 =  scalex * math.cos(angle)
-        th12 = -math.sin(angle) * scaley * input_H/input_W
-        th13 =  (2 * xc - input_W - 1) / (input_W - 1)
-        
-        th21 = math.sin(angle) * scalex * input_W/input_H
-        th22 =  scaley * math.cos(angle)  
-        th23 =  (2 * yc - input_H - 1) / (input_H - 1)
-                  
-        t = np.asarray([th11, th12, th13, th21, th22, th23], dtype=np.float)
-        t = torch.from_numpy(t).type(torch.FloatTensor)
-        t = t.cuda()
-        theta = t.view(-1, 2, 3)
-        
-        grid = F.affine_grid(theta, torch.Size((1, 3, int(target_h), int(target_gw))))
-        x = F.grid_sample(im_data, grid)
-        
-        h2 = 2 * h2
-        scalex =  (w2 + int( 2 *  h2)) / input_W
-        scaley = h2 / input_H
-  
-        th11 =  scalex * math.cos(angle)
-        th12 = -math.sin(angle) * scaley
-        th13 =  (2 * xc - input_W - 1) / (input_W - 1) #* torch.cos(angle_var) - (2 * yc - input_H - 1) / (input_H - 1) * torch.sin(angle_var)
-  
-        th21 = math.sin(angle) * scalex
-        th22 =  scaley * math.cos(angle)
-        th23 =  (2 * yc - input_H - 1) / (input_H - 1) #* torch.cos(angle_var) + (2 * xc - input_W - 1) / (input_W - 1) * torch.sin(angle_var)
-  
-  
-        t = np.asarray([th11, th12, th13, th21, th22, th23], dtype=np.float)
-        t = torch.from_numpy(t).type(torch.FloatTensor)
-        t = t.cuda()
-        theta = t.view(-1, 2, 3)
-        
-        grid2 = F.affine_grid(theta, torch.Size((1, 3, int( 2 * target_h), int(target_gw + 2 * target_h ))))
-        x2 = F.grid_sample(im_data, grid2)
-        
-        im = x.data.cpu().numpy()
-        im = im.squeeze(0)
-        im = im.swapaxes(0, 2)
-        im = im.swapaxes(0, 1)
-        
-        features = net.forward_features(x)
-        labels_pred = net.forward_ocr(features)
-        
-        features2 = net.forward_features(x2)
-        offset = (features2.size(2) - features.size(2)) // 2
-        offset2 = (features2.size(3) - features.size(3)) // 2
-        features2 = features2[:, :, offset:(features.size(2) + offset), offset2:-offset2]
-        labels_pred2 = net.forward_ocr(features2)
-        
-        ctc_f = labels_pred.data.cpu().numpy()
-        ctc_f = ctc_f.swapaxes(1, 2)
+    conf_factor = score / box_area
+    #if conf_factor < 0.1:
+    #  continue
     
-        labels = ctc_f.argmax(2)
-        
-        ind = np.unravel_index(labels, ctc_f.shape)
-        conf = np.mean( np.exp(ctc_f.max(2)[labels > 3]))
-        #if conf < 0.4:
-        #  print('Too low conf!')
-        #  continue 
-        
-        conf_raw = np.exp(ctc_f[ind])
-        
-        det_text, conf2, dec_s, word_splits = print_seq_ext(labels[0, :], codec)  
-        det_text = det_text.strip()
-        
-        if args.debug:   
-          im += 1
-          im *= 128
-          cv2.imshow('im', im.astype(np.uint8))
-          cv2.waitKey(0)
-          
-        if args.debug:
-          print(det_text)
-          
-        
-        if conf < 0.01 and len(det_text) == 3:
-          print('Too low conf short: {0} {1}'.format(det_text, conf))
-          continue 
-        
-        try:
-          if len(det_text) > 0 and 'ARABIC' in ud.name(det_text[0]):
-            det_text = det_text[::-1]
-        except:
-          pass
-        
-        has_long = False
-        if len(det_text) > 0:
-          rot_mat = cv2.getRotationMatrix2D( (0, 0), -angle * 180 / math.pi, 1 )
-          splits_raw = process_splits(det_text, word_splits, conf_raw, dec_s, conf2, ctc_f, rot_mat, angle, boxr, w, h, im_resized, 0) # Process the split and improve the localization
-          for spl in splits_raw:
+    boxr2 = box[0:8].reshape(-1, 2)
+    boxr2[boxr2 < 0] = 0
+    if boxr2[:, 0].max() > img.shape[1]:
+      continue
+    if boxr2[:, 1].max() > img.shape[0]:
+      continue
+    
+    center = (boxr[0, :] + boxr[1, :] + boxr[2, :] + boxr[3, :]) / 4
+    
+    dw = boxr[2, :] - boxr[1, :]
+    dw2 = boxr[0, :] - boxr[3, :]
+    dh =  boxr[1, :] - boxr[0, :]
+    dh2 =  boxr[3, :] - boxr[2, :]
+    
+    h = math.sqrt(dh[0] * dh[0] + dh[1] * dh[1]) + 1
+    h2 = math.sqrt(dh2[0] * dh2[0] + dh2[1] * dh2[1]) + 1
+    h = (h + h2) / 2
+    w = math.sqrt(dw[0] * dw[0] + dw[1] * dw[1])
+    w2 = math.sqrt(dw2[0] * dw2[0] + dw2[1] * dw2[1])
+    w = (w + w2) / 2
+    
+    if (( h - 1 ) / im_scaley ) < min_height:
+      print('too small detection')
+      continue
+    
+    input_W = im_data.size(3)
+    input_H = im_data.size(2)
+    target_h = 44  
       
-            spl[1][0] = spl[1][0].strip()
-            
-            if len(spl[1][0]) >= eval_text_length:
-              has_long = True
-              boxw = spl[0]
-              boxw[:, 0] /= im_scalex
-              boxw[:, 1] /= im_scaley
-              draw_box_points(img, boxw, color = (0, 255, 0))
-              #cv2.imshow('img', img)
-              #cv2.waitKey()
-              
-              #print('{0} - {1}'.format(spl[1][0], conf_factor))
-              #if conf_factor < 0.01:
-              #  print('Skipping {0} - {1}'.format(spl[1][0], conf_factor))
-              #  continue
-              print('{0} - {1}'.format(spl[1][0], conf_factor))
-              boxw = boxw.reshape(8)
-              detetcions_out.append([boxw, spl[1][0]])
-                  
-            
+    scale = target_h / h
+    target_gw = int(w * scale + target_h / 4)  
+    target_gw = max(8, int(round(target_gw / 4)) * 4) 
+    xc = center[0] 
+    yc = center[1] 
+    w2 = w 
+    h2 = h 
+    
+    angle = math.atan2((boxr[2][1] - boxr[1][1]), boxr[2][0] - boxr[1][0])
+    angle2 = math.atan2((boxr[3][1] - boxr[0][1]), boxr[3][0] - boxr[0][0])
+    angle = (angle + angle2) / 2 
+    
+    #show pooled image in image layer
+    scalex = (w2 + h2 / 4) / input_W 
+    scaley = h2 / input_H 
+      
+    th11 =  scalex * math.cos(angle)
+    th12 = -math.sin(angle) * scaley * input_H/input_W
+    th13 =  (2 * xc - input_W - 1) / (input_W - 1)
+    
+    th21 = math.sin(angle) * scalex * input_W/input_H
+    th22 =  scaley * math.cos(angle)  
+    th23 =  (2 * yc - input_H - 1) / (input_H - 1)
+          
+    t = np.asarray([th11, th12, th13, th21, th22, th23], dtype=np.float)
+    t = torch.from_numpy(t).type(torch.FloatTensor)
+    t = t.cuda()
+    theta = t.view(-1, 2, 3)
+    
+    grid = F.affine_grid(theta, torch.Size((1, 3, int(target_h), int(target_gw))))
+    x = F.grid_sample(im_data, grid)
+    
+    h2 = 2 * h2
+    scalex =  (w2 + int( 2 *  h2)) / input_W
+    scaley = h2 / input_H
+  
+    th11 =  scalex * math.cos(angle)
+    th12 = -math.sin(angle) * scaley
+    th13 =  (2 * xc - input_W - 1) / (input_W - 1) #* torch.cos(angle_var) - (2 * yc - input_H - 1) / (input_H - 1) * torch.sin(angle_var)
+  
+    th21 = math.sin(angle) * scalex
+    th22 =  scaley * math.cos(angle)
+    th23 =  (2 * yc - input_H - 1) / (input_H - 1) #* torch.cos(angle_var) + (2 * xc - input_W - 1) / (input_W - 1) * torch.sin(angle_var)
+  
+  
+    t = np.asarray([th11, th12, th13, th21, th22, th23], dtype=np.float)
+    t = torch.from_numpy(t).type(torch.FloatTensor)
+    t = t.cuda()
+    theta = t.view(-1, 2, 3)
+    
+    grid2 = F.affine_grid(theta, torch.Size((1, 3, int( 2 * target_h), int(target_gw + 2 * target_h ))))
+    x2 = F.grid_sample(im_data, grid2)
+    
+    im = x.data.cpu().numpy()
+    im = im.squeeze(0)
+    im = im.swapaxes(0, 2)
+    im = im.swapaxes(0, 1)
+    
+    features = net.forward_features(x)
+    labels_pred = net.forward_ocr(features)
+    
+    features2 = net.forward_features(x2)
+    offset = (features2.size(2) - features.size(2)) // 2
+    offset2 = (features2.size(3) - features.size(3)) // 2
+    features2 = features2[:, :, offset:(features.size(2) + offset), offset2:-offset2]
+    labels_pred2 = net.forward_ocr(features2)
+    
+    ctc_f = labels_pred.data.cpu().numpy()
+    ctc_f = ctc_f.swapaxes(1, 2)
+    
+    labels = ctc_f.argmax(2)
+    
+    ind = np.unravel_index(labels, ctc_f.shape)
+    conf = np.mean( np.exp(ctc_f.max(2)[labels > 3]))
+    #if conf < 0.4:
+    #  print('Too low conf!')
+    #  continue 
+    
+    conf_raw = np.exp(ctc_f[ind])
+    
+    det_text, conf2, dec_s, word_splits = print_seq_ext(labels[0, :], codec)  
+    det_text = det_text.strip()
+    
+    if args.debug:   
+      im += 1
+      im *= 128
+      cv2.imshow('im', im.astype(np.uint8))
+      cv2.waitKey(0)
+      
+    if args.debug:
+      print(det_text)
+      
+    
+    if conf < 0.01 and len(det_text) == 3:
+      print('Too low conf short: {0} {1}'.format(det_text, conf))
+      continue 
+    
+    try:
+      if len(det_text) > 0 and 'ARABIC' in ud.name(det_text[0]):
+        det_text = det_text[::-1]
+    except:
+      pass
+    
+    has_long = False
+    if len(det_text) > 0:
+      rot_mat = cv2.getRotationMatrix2D( (0, 0), -angle * 180 / math.pi, 1 )
+      splits_raw = process_splits(det_text, word_splits, conf_raw, dec_s, conf2, ctc_f, rot_mat, angle, boxr, w, h, im_resized, 0) # Process the split and improve the localization
+      for spl in splits_raw:
+      
+        spl[1][0] = spl[1][0].strip()
         
+        if len(spl[1][0]) >= eval_text_length:
+          has_long = True
+          boxw = spl[0]
+          boxw[:, 0] /= im_scalex
+          boxw[:, 1] /= im_scaley
+          draw_box_points(img, boxw, color = (0, 255, 0))
+          #cv2.imshow('img', img)
+          #cv2.waitKey()
+          
+          #print('{0} - {1}'.format(spl[1][0], conf_factor))
+          #if conf_factor < 0.01:
+          #  print('Skipping {0} - {1}'.format(spl[1][0], conf_factor))
+          #  continue
+          print('{0} - {1}'.format(spl[1][0], conf_factor))
+          boxw = boxw.reshape(8)
+          detetcions_out.append([boxw, spl[1][0]])
+          
+        
+    
        
-             
+         
       pix = img
       
       if args.evaluate == 1:
-        tp, tp_e2e, gt_e2e, tp_e2e_ed1, detection_to_gt  = evaluate_image(pix, detetcions_out, gt_rect, gt_txts, eval_text_length=eval_text_length)
-        tp_all += tp 
-        gt_all += len(gt_txts)
-        tp_e2e_all += tp_e2e
-        gt_e2e_all += gt_e2e
-        tp_e2e_ed1_all += tp_e2e_ed1
-        detecitons_all += len(detetcions_out)
-        
-        print("  E2E recall {0:.3f} / {1:.3f} / {2:.3f}, precision: {3:.3f}".format( 
-          tp_e2e_all / float( max(1, gt_e2e_all) ), 
-          tp_all / float( max(1, gt_e2e_all )), 
-          tp_e2e_ed1_all / float( max(1, gt_e2e_all )), 
-          tp_all /  float( max(1, detecitons_all)) ))
-        
+    tp, tp_e2e, gt_e2e, tp_e2e_ed1, detection_to_gt  = evaluate_image(pix, detetcions_out, gt_rect, gt_txts, eval_text_length=eval_text_length)
+    tp_all += tp 
+    gt_all += len(gt_txts)
+    tp_e2e_all += tp_e2e
+    gt_e2e_all += gt_e2e
+    tp_e2e_ed1_all += tp_e2e_ed1
+    detecitons_all += len(detetcions_out)
+    
+    print("  E2E recall {0:.3f} / {1:.3f} / {2:.3f}, precision: {3:.3f}".format( 
+      tp_e2e_all / float( max(1, gt_e2e_all) ), 
+      tp_all / float( max(1, gt_e2e_all )), 
+      tp_e2e_ed1_all / float( max(1, gt_e2e_all )), 
+      tp_all /  float( max(1, detecitons_all)) ))
+    
       pil_img = Image.fromarray(pix)
       pil_draw = ImageDraw.Draw(pil_img)
       
       det_no = 0
       for box, det_text in detetcions_out:
-        
-        width, height = pil_draw.textsize(det_text, font=font)
-        box = box.reshape(8)
-        center =  [box[2] + 3, box[3] - height - 2]
-        
-        draw_text = det_text
-        try:
-          if len(det_text) > 0 and 'ARABIC' in ud.name(det_text[0]):
-            draw_text = det_text[::-1]
-        except:
-          pass
-        
-        pil_draw.text((center[0], center[1]), draw_text, fill = (0,255,0),font=font)
-        if args.evaluate == 1 and det_no in detection_to_gt:
-          [gt_no, ratio, edit_dist] = detection_to_gt[det_no]
-          if edit_dist > 0:
-            center[0] += width + 5
-            gt_text = gt_txts[gt_no]
-            #pil_draw.text((center[0], center[1]), gt_text, fill = (255,0,0),font=font)
+    
+    width, height = pil_draw.textsize(det_text, font=font)
+    box = box.reshape(8)
+    center =  [box[2] + 3, box[3] - height - 2]
+    
+    draw_text = det_text
+    try:
+      if len(det_text) > 0 and 'ARABIC' in ud.name(det_text[0]):
+        draw_text = det_text[::-1]
+    except:
+      pass
+    
+    pil_draw.text((center[0], center[1]), draw_text, fill = (0,255,0),font=font)
+    if args.evaluate == 1 and det_no in detection_to_gt:
+      [gt_no, ratio, edit_dist] = detection_to_gt[det_no]
+      if edit_dist > 0:
+        center[0] += width + 5
+        gt_text = gt_txts[gt_no]
+        #pil_draw.text((center[0], center[1]), gt_text, fill = (255,0,0),font=font)
   
-        det_no += 1
+    det_no += 1
       pix = np.array(pil_img)
-              
+          
       cv2.imwrite('preview/{0}'.format(base_nam), pix)
       
       res_file.close()
-        
+    
       #if im_no > 100:
       #  break
       im_no += 1
       if args.debug == 1:
-        cv2.imshow('pix', pix)
-        cv2.waitKey(0)
+    cv2.imshow('pix', pix)
+    cv2.waitKey(0)
       
     
     

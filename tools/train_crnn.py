@@ -118,10 +118,10 @@ def main(opts):
   for step in range(step_start, opts.max_iters):
 
     try:
-        data = next(data_iter)
+    data = next(data_iter)
     except:
-        data_iter = iter(ocrdataloader)
-        data = next(data_iter)
+    data_iter = iter(ocrdataloader)
+    data = next(data_iter)
     
     im_data, gt_boxes, text = data
     im_data = im_data.cuda()
@@ -141,18 +141,18 @@ def main(opts):
 
     if step % disp_interval == 0:
       try:
-        print('step:%d || loss %.4f' % (step, loss))
+    print('step:%d || loss %.4f' % (step, loss))
       except:
-        import sys, traceback
-        traceback.print_exc(file=sys.stdout)
-        pass
+    import sys, traceback
+    traceback.print_exc(file=sys.stdout)
+    pass
     
     if step > step_start and (step % batch_per_epoch == 0):
       save_name = os.path.join(opts.save_path, '{}_{}.h5'.format(model_name, step))
       state = {'step': step,
-               'learning_rate': learning_rate,
-              'state_dict': net.state_dict(),
-              'optimizer': optimizer.state_dict()}
+           'learning_rate': learning_rate,
+          'state_dict': net.state_dict(),
+          'optimizer': optimizer.state_dict()}
       torch.save(state, save_name)
       print('save model: {}'.format(save_name))
 

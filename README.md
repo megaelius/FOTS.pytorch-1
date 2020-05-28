@@ -18,7 +18,7 @@ compiling:
 # optional
 source activate conda_env
 cd $project_path/rroi_align
-sh make.sh          # compile
+sh make.sh      # compile
 ```
 
 - EAST nms
@@ -35,16 +35,16 @@ python test.py
 some examples:
 <table>
     <tr>
-        <td ><center><img src="./data/ICDAR2015/img_1.jpg" >图1 </center></td>
-        <td ><center><img src="./data/ICDAR2015/img_4.jpg"  >图2 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_1.jpg" >图1 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_4.jpg"  >图2 </center></td>
     </tr>
     <tr>
-        <td ><center><img src="./data/ICDAR2015/img_7.jpg" >图3 </center></td>
-        <td ><center><img src="./data/ICDAR2015/img_22.jpg"  >图4 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_7.jpg" >图3 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_22.jpg"  >图4 </center></td>
     </tr>
     <tr>
-        <td ><center><img src="./data/ICDAR2015/img_13.jpg" >图5 </center></td>
-        <td ><center><img src="./data/ICDAR2015/img_16.jpg"  >图6 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_13.jpg" >图5 </center></td>
+    <td ><center><img src="./data/ICDAR2015/img_16.jpg"  >图6 </center></td>
     </tr>
 </table>
 
@@ -53,16 +53,16 @@ some examples:
 RoIRotate applies transformation on oriented feature regions to obtain axis-aligned feature maps.use bilinear interpolation to compute the values of the output
 <table>
     <tr>
-        <td ><center><img src="./data/tshow/crop13.jpg" >图1 </center></td>
-        <td ><center><img src="./data/tshow/crop8.jpg"  >图2 </center></td>
+    <td ><center><img src="./data/tshow/crop13.jpg" >图1 </center></td>
+    <td ><center><img src="./data/tshow/crop8.jpg"  >图2 </center></td>
     </tr>
     <tr>
-        <td ><center><img src="./data/tshow/crop3.jpg" >图3 </center></td>
-        <td ><center><img src="./data/tshow/crop4.jpg"  >图4 </center></td>
+    <td ><center><img src="./data/tshow/crop3.jpg" >图3 </center></td>
+    <td ><center><img src="./data/tshow/crop4.jpg"  >图4 </center></td>
     </tr>
     <tr>
-        <td ><center><img src="./data/tshow/crop5.jpg" >图5 </center></td>
-        <td ><center><img src="./data/tshow/crop6.jpg"  >图6 </center></td>
+    <td ><center><img src="./data/tshow/crop5.jpg" >图5 </center></td>
+    <td ><center><img src="./data/tshow/crop6.jpg"  >图6 </center></td>
     </tr>
 </table>
 

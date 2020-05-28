@@ -65,8 +65,8 @@ def main(opts):
   ctc_loss = CTCLoss()
   
   data_generator = ocr_gen.get_batch(num_workers=opts.num_readers,
-          batch_size=opts.batch_size, 
-          train_list=opts.train_list, in_train=True, norm_height=opts.norm_height, rgb = True)
+      batch_size=opts.batch_size, 
+      train_list=opts.train_list, in_train=True, norm_height=opts.norm_height, rgb = True)
   
   train_loss = 0
   cnt = 0
@@ -81,9 +81,9 @@ def main(opts):
     # backward
     '''
     acts: Tensor of (seqLength x batch x outputDim) containing output from network
-        labels: 1 dimensional Tensor containing all the targets of the batch in one sequence
-        act_lens: Tensor of size (batch) containing size of each output sequence from the network
-        act_lens: Tensor of (batch) containing label length of each example
+    labels: 1 dimensional Tensor containing all the targets of the batch in one sequence
+    act_lens: Tensor of size (batch) containing size of each output sequence from the network
+    act_lens: Tensor of (batch) containing label length of each example
     '''
     
     probs_sizes =  torch.IntTensor( [(labels_pred.permute(2,0,1).size()[0])] * (labels_pred.permute(2,0,1).size()[1]) )
@@ -108,10 +108,10 @@ def main(opts):
     
     
     if step % disp_interval == 0:
-        
+    
       train_loss /= cnt
       print('epoch %d[%d], loss: %.3f, lr: %.5f ' % (
-          step / batch_per_epoch, step, train_loss, learning_rate))
+      step / batch_per_epoch, step, train_loss, learning_rate))
 
       train_loss = 0
       cnt = 0
@@ -119,9 +119,9 @@ def main(opts):
     if step > step_start and (step % batch_per_epoch == 0):
       save_name = os.path.join(opts.save_path, '{}_{}.h5'.format(model_name, step))
       state = {'step': step,
-               'learning_rate': learning_rate,
-              'state_dict': net.state_dict(),
-              'optimizer': optimizer.state_dict()}
+           'learning_rate': learning_rate,
+          'state_dict': net.state_dict(),
+          'optimizer': optimizer.state_dict()}
       torch.save(state, save_name)
       print('save model: {}'.format(save_name))
       

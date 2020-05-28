@@ -140,32 +140,32 @@ def main(opts):
       im_data = im_data.cuda()
 
       try:
-        loss= process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training=True)
+    loss= process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training=True)
 
-        net.zero_grad()
-        # optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    net.zero_grad()
+    # optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
       except:
-        import sys, traceback
-        traceback.print_exc(file=sys.stdout)
-        pass
+    import sys, traceback
+    traceback.print_exc(file=sys.stdout)
+    pass
 
 
       if index % disp_interval == 0:
-        try:
-          print('epoch:%d || step:%d || loss %.4f' % (step, index, loss))
-        except:
-          import sys, traceback
-          traceback.print_exc(file=sys.stdout)
-          pass
+    try:
+      print('epoch:%d || step:%d || loss %.4f' % (step, index, loss))
+    except:
+      import sys, traceback
+      traceback.print_exc(file=sys.stdout)
+      pass
 
     if step > step_start and (step % batch_per_epoch == 0):
       save_name = os.path.join(opts.save_path, '{}_{}.h5'.format(model_name, step))
       state = {'step': step,
-               'learning_rate': learning_rate,
-              'state_dict': net.state_dict(),
-              'optimizer': optimizer.state_dict()}
+           'learning_rate': learning_rate,
+          'state_dict': net.state_dict(),
+          'optimizer': optimizer.state_dict()}
       torch.save(state, save_name)
       print('save model: {}'.format(save_name))
 

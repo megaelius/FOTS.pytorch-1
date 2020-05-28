@@ -82,7 +82,7 @@ if __name__ == '__main__':
       im_data = net_utils.np_to_variable(images.transpose(0, 3, 1, 2), is_cuda=args.cuda)
       seg_pred, rboxs, angle_pred, features = net(im_data)
 
-      rbox = rboxs[0].data.cpu()[0].numpy()                   # 转变成h,w,c
+      rbox = rboxs[0].data.cpu()[0].numpy()           # 转变成h,w,c
       rbox = rbox.swapaxes(0, 1)
       rbox = rbox.swapaxes(1, 2)
 
@@ -100,31 +100,31 @@ if __name__ == '__main__':
       out_boxes = []
       for box in boxes:
 
-        pts  = box[0:8]
-        pts = pts.reshape(4, -1)
+    pts  = box[0:8]
+    pts = pts.reshape(4, -1)
 
-        # det_text, conf, dec_s = ocr_image(net, codec, im_data, box)
-        det_text, conf, dec_s = align_ocr(net, converter, im_data, box, features, debug=0)
-        if len(det_text) == 0:
-          continue
+    # det_text, conf, dec_s = ocr_image(net, codec, im_data, box)
+    det_text, conf, dec_s = align_ocr(net, converter, im_data, box, features, debug=0)
+    if len(det_text) == 0:
+      continue
 
-        width, height = draw.textsize(det_text, font=font2)
-        center =  [box[0], box[1]]
-        draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
-        out_boxes.append(box)
-        print(det_text)
+    width, height = draw.textsize(det_text, font=font2)
+    center =  [box[0], box[1]]
+    draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
+    out_boxes.append(box)
+    print(det_text)
 
       im = np.array(img)
       for box in out_boxes:
-        pts  = box[0:8]
-        pts = pts.reshape(4, -1)
-        draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
+    pts  = box[0:8]
+    pts = pts.reshape(4, -1)
+    draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
 
       cv2.imshow('img', im)
       basename = os.path.basename(path)
       cv2.imwrite(os.path.join(args.output, basename), im)
       cv2.waitKey(1000)
 
-        
+    
 
 

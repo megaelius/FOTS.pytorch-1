@@ -118,10 +118,10 @@ def main(opts):
   for step in range(len(dataset)):
 
     try:
-        data = next(data_iter)
+    data = next(data_iter)
     except:
-        data_iter = iter(ocrdataloader)
-        data = next(data_iter)
+    data_iter = iter(ocrdataloader)
+    data = next(data_iter)
 
     im_data, gt_boxes, text = data
     im_data = im_data.cuda()
@@ -131,7 +131,7 @@ def main(opts):
 
       pred, target = res
       if pred == target[0]:
-        num_count += 1
+    num_count += 1
     except:
       import sys, traceback
       traceback.print_exc(file=sys.stdout)

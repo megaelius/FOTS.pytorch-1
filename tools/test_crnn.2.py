@@ -140,12 +140,12 @@ def main(opts):
       
     try:
       with torch.no_grad():
-        res = process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training=False)
+    res = process_crnn(im_data, gtso, lbso, net, ctc_loss, converter, training=False)
 
-        pred, target = res
-        target = ''.join(target)
-        if pred == target:
-          num_count += 1
+    pred, target = res
+    target = ''.join(target)
+    if pred == target:
+      num_count += 1
     except:
       import sys, traceback
       traceback.print_exc(file=sys.stdout)
