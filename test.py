@@ -121,7 +121,7 @@ if __name__ == '__main__':
         pts = pts.reshape(4, -1)
         draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
 
-      cv2.imshow('img', im)
+      #cv2.imshow('img', im)
       basename = os.path.basename(path)
       cv2.imwrite(os.path.join(args.output, basename), im)
       cv2.waitKey(1000)
