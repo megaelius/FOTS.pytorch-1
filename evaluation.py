@@ -35,8 +35,8 @@ def resize_image(im, max_size = 1585152, scale_up=True):
         image_size[0] = int(image_size[0] // 32) * 32
         image_size[1] = int(image_size[1] // 32) * 32
 
-        resize_h = int(image_size[1])
-        resize_w = int(image_size[0])
+    resize_h = int(image_size[1])
+    resize_w = int(image_size[0])
 
     scaled = cv2.resize(im, dsize=(resize_w, resize_h))
     return scaled, (resize_h, resize_w)
