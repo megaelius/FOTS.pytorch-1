@@ -186,6 +186,7 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   sim_preds = converter.decode(labels_pred.data, preds_size.data, raw=False)
 
   ctc_f = labels_pred.data.cpu().numpy()
+  print(ctc_f.shape)
   ctc_f = ctc_f.swapaxes(1, 2)
 
   labels = ctc_f.argmax(2)
