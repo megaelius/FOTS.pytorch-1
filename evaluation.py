@@ -15,6 +15,7 @@ import argparse
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+from pathlib import Path
 
 from nms import get_boxes
 
