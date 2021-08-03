@@ -10,7 +10,7 @@ _ext
 *.npy
 
 # ipython/jupyter notebooks
-*.ipynb
+.ipynb
 **/.ipynb_checkpoints/
 
 # Editor temporaries
@@ -28,4 +28,3 @@ _ext
 /data/*.py
 /weights/*.h5
 /weights/e2e-mlt.h5
-
