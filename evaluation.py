@@ -48,7 +48,8 @@ def is_plate(s):
     Returns True if the string s follows the format of an aircraft registration.
     '''
     df = pd.read_csv('./Aircraft_registration_prefixes.csv',sep=';')
-    prefixes = [p.replace('-','') for p in df['Regn_Prefix']]
+    #prefixes = [p.replace('-','') for p in df['Regn_Prefix']]
+    prefixes = list(df['Regn_Prefix'])
     if len(s) >= 4:
         return s[:1] in prefixes \
             or s[:2] in prefixes \
@@ -132,7 +133,7 @@ if __name__ == '__main__':
                     draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
                     out_boxes.append(box)
                     #print(det_text, conf, dec_s)
-                    if (is_plate(det_text) and plate is None) or (is_plate(det_text) and '-' in det_text and plate is not None):
+                    if (is_plate(det_text) and conf > confidence:
                         plate = det_text
                         confidence = conf
                 print(plate, confidence)
