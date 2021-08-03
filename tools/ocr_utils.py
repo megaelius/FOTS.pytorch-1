@@ -186,7 +186,7 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   ctc_f = ctc_f.swapaxes(2,1)
   labels = ctc_f.argmax(2)
   ind = np.unravel_index(labels, ctc_f.shape)
-  print(ind)
+  print(ctc_f[ind])
   conf = np.mean( np.exp(ctc_f[ind]) )
 
   _, labels_pred = labels_pred.max(1)
