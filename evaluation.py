@@ -7,6 +7,7 @@ Created on 2019-06-30
 import os
 import cv2
 import glob
+import tqdm
 import numpy as np
 import torch
 import argparse
