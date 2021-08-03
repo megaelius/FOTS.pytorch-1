@@ -193,7 +193,7 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   # ind = np.unravel_index(labels, ctc_f.shape)
   # conf = np.mean( np.exp(ctc_f[ind]) )
 
-  det_text, conf2, dec_s, splits = print_seq_ext(labels[0, :], codec)
+  det_text, conf2, dec_s, splits = print_seq_ext(labels_pred[0, :], codec)
   #conf2 = 0.9
   #dec_s = 1
   return sim_preds, conf2, dec_s
