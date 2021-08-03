@@ -185,15 +185,15 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   preds_size = Variable(torch.IntTensor([labels_pred.size(0)]))
   sim_preds = converter.decode(labels_pred.data, preds_size.data, raw=False)
 
-  # ctc_f = labels_pred.data.cpu().numpy()
-  # ctc_f = ctc_f.swapaxes(1, 2)
+  ctc_f = labels_pred.data.cpu().numpy()
+  ctc_f = ctc_f.swapaxes(1, 2)
 
-  # labels = ctc_f.argmax(2)
+  labels = ctc_f.argmax(2)
 
-  # ind = np.unravel_index(labels, ctc_f.shape)
-  # conf = np.mean( np.exp(ctc_f[ind]) )
+  ind = np.unravel_index(labels, ctc_f.shape)
+  conf = np.mean( np.exp(ctc_f[ind]) )
 
-  det_text, conf2, dec_s, splits = print_seq_ext(labels_pred, converter.alphabet)
+  #det_text, conf2, dec_s, splits = print_seq_ext(labels_pred, converter.alphabet)
   #conf2 = 0.9
-  #dec_s = 1
-  return sim_preds, conf2, dec_s
+  dec_s = 1
+  return sim_preds, conf, dec_s
