@@ -50,45 +50,45 @@ def print_seq_ext(wf, codec):
         end_pos = cx
         splits.append(current_word)
         current_word = ''
-      
-    
+
+
     if len(word) == 0:
       start_pos = cx
-    prev = c    
-    
+    prev = c
+
   dec_splits.append(end_pos + 1)
   conf2 = [start_pos, end_pos + 1]
-  
+
   return word.strip(), np.array([conf2]), np.array([dec_splits]), splits
 
 def ocr_image(net, codec, im_data, detection):
   # 将ocr区域的图像处理后进行识别
   boxo = detection
   boxr = boxo[0:8].reshape(-1, 2)
-  
+
   center = (boxr[0, :] + boxr[1, :] + boxr[2, :] + boxr[3, :]) / 4
-  
+
   dw = boxr[2, :] - boxr[1, :]
   dh =  boxr[1, :] - boxr[0, :]
 
   w = math.sqrt(dw[0] * dw[0] + dw[1] * dw[1])
   h = math.sqrt(dh[0] * dh[0] + dh[1] * dh[1])
-  
+
   input_W = im_data.size(3)
   input_H = im_data.size(2)
-  target_h = 40  
-    
-  scale = target_h / max(1, h) 
-  target_gw = int(w * scale) + target_h 
-  target_gw = max(2, target_gw // 32) * 32      
-    
-  xc = center[0] 
-  yc = center[1] 
-  w2 = w 
-  h2 = h 
-  
+  target_h = 40
+
+  scale = target_h / max(1, h)
+  target_gw = int(w * scale) + target_h
+  target_gw = max(2, target_gw // 32) * 32
+
+  xc = center[0]
+  yc = center[1]
+  w2 = w
+  h2 = h
+
   angle = math.atan2((boxr[2][1] - boxr[1][1]), boxr[2][0] - boxr[1][0])
-  
+
   #show pooled image in image layer
 
   scalex = (w2 + h2) / input_W * 1.2
@@ -97,57 +97,57 @@ def ocr_image(net, codec, im_data, detection):
   th11 =  scalex * math.cos(angle)
   th12 = -math.sin(angle) * scaley
   th13 =  (2 * xc - input_W - 1) / (input_W - 1) #* torch.cos(angle_var) - (2 * yc - input_H - 1) / (input_H - 1) * torch.sin(angle_var)
-  
-  th21 = math.sin(angle) * scalex 
-  th22 =  scaley * math.cos(angle)  
+
+  th21 = math.sin(angle) * scalex
+  th22 =  scaley * math.cos(angle)
   th23 =  (2 * yc - input_H - 1) / (input_H - 1) #* torch.cos(angle_var) + (2 * xc - input_W - 1) / (input_W - 1) * torch.sin(angle_var)
-            
+
   t = np.asarray([th11, th12, th13, th21, th22, th23], dtype=np.float)
   t = torch.from_numpy(t).type(torch.FloatTensor)
   t = t.cuda()
   theta = t.view(-1, 2, 3)
-  
+
   grid = F.affine_grid(theta, torch.Size((1, 3, int(target_h), int(target_gw))))
-  
-  
+
+
   x = F.grid_sample(im_data, grid)
-  
+
   features = net.forward_features(x)
   labels_pred = net.forward_ocr(features)
-  
+
   ctc_f = labels_pred.data.cpu().numpy()
   ctc_f = ctc_f.swapaxes(1, 2)
 
   labels = ctc_f.argmax(2)
-  
+
   ind = np.unravel_index(labels, ctc_f.shape)
   conf = np.mean( np.exp(ctc_f[ind]) )
-  
-  det_text, conf2, dec_s, splits = print_seq_ext(labels[0, :], codec)  
-  
+
+  det_text, conf2, dec_s, splits = print_seq_ext(labels[0, :], codec)
+
   return det_text, conf2, dec_s
 
 
 def align_ocr(net, converter, im_data, boxo, features, debug=0):
   # 将ocr区域的图像处理后进行识别
   boxr = boxo[0:8].reshape(-1, 2)
-  
+
   # 1. 准备rroi的数据
   center = (boxr[0, :] + boxr[1, :] + boxr[2, :] + boxr[3, :]) / 4
-  
+
   dw = boxr[2, :] - boxr[1, :]
   dh =  boxr[1, :] - boxr[0, :]
   w = math.sqrt(dw[0] * dw[0] + dw[1] * dw[1])
   h = math.sqrt(dh[0] * dh[0] + dh[1] * dh[1])
-  
+
   angle = math.atan2((boxr[2][1] - boxr[1][1]), boxr[2][0] - boxr[1][0])
   angle = -angle / 3.1415926535 * 180
   rroi = [0, int(center[0]), int(center[1]), h, w, angle]
 
-  target_h = 11  
-  scale = target_h / max(1, h) 
-  target_gw = int(w * scale) + target_h 
-  target_gw = max(2, target_gw // 32) * 32      
+  target_h = 11
+  scale = target_h / max(1, h)
+  target_gw = int(w * scale) + target_h
+  target_gw = max(2, target_gw // 32) * 32
   rroialign = _RRoiAlign(target_h, target_gw, 1.0 / 4)
   rois = torch.tensor(rroi).to(torch.float).cuda()
 
@@ -189,11 +189,11 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   # ctc_f = ctc_f.swapaxes(1, 2)
 
   # labels = ctc_f.argmax(2)
-  
+
   # ind = np.unravel_index(labels, ctc_f.shape)
   # conf = np.mean( np.exp(ctc_f[ind]) )
-  
-  # det_text, conf2, dec_s, splits = print_seq_ext(labels[0, :], codec)  
-  conf2 = 0.9
-  dec_s = 1
+
+  det_text, conf2, dec_s, splits = print_seq_ext(labels[0, :], codec)
+  #conf2 = 0.9
+  #dec_s = 1
   return sim_preds, conf2, dec_s
