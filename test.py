@@ -113,7 +113,7 @@ if __name__ == '__main__':
         center =  [box[0], box[1]]
         draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
         out_boxes.append(box)
-        print(det_text)
+        print(det_text, conf, dec_s)
 
       im = np.array(img)
       for box in out_boxes:
