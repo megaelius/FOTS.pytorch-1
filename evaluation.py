@@ -84,7 +84,7 @@ if __name__ == '__main__':
         for model in sorted(os.listdir(args.test_folder)):
             if model in ['People','Objects']:
                 continue
-            lateral_path = os.path.join(args.input,model,'Lateral')
+            lateral_path = os.path.join(args.test_folder,model,'Lateral')
             for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                 path = os.path.join(lateral_path,image_name)
                 im = cv2.imread(path)
