@@ -128,10 +128,11 @@ if __name__ == '__main__':
                     center =  [box[0], box[1]]
                     draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
                     out_boxes.append(box)
-                    print(det_text, conf, dec_s)
+                    #print(det_text, conf, dec_s)
                     if (is_plate(det_text) and conf > confidence) or (is_plate(det_text) and '-' in det_text):
                         plate = det_text
                         confidence = conf
+                print(plate, confidence)
                 df['Model'].append(model)
                 df['Video'].append(image_name[4:-9])
                 df['Frame'].append(int(image_name[-8:-4]))

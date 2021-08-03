@@ -179,16 +179,18 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   labels_pred = net.forward_ocr(x)
   # labels_pred = net.ocr_forward(x)
   # labels_pred = labels_pred.permute(0,2,1)
-
+  '''
+  TODO:
+  Understand this shit
+  '''
   ctc_f = labels_pred.data.cpu().numpy()
-  print(ctc_f.shape)
-  print(ctc_f)
   ctc_f = ctc_f.swapaxes(2,1)
   labels = ctc_f.argmax(2)
   ind = np.unravel_index(labels, ctc_f.shape)
-  print(ctc_f[ind])
   conf = np.mean( np.exp(ctc_f[ind]) )
-
+  '''
+  --------------------------------------------
+  '''
   _, labels_pred = labels_pred.max(1)
   labels_pred = labels_pred.transpose(1, 0).contiguous().view(-1)
   preds_size = Variable(torch.IntTensor([labels_pred.size(0)]))
