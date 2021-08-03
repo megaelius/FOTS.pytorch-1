@@ -49,7 +49,7 @@ def is_plate(s):
     '''
     df = pd.read_csv('./Aircraft_registration_prefixes.csv',sep=';')
     #prefixes = [p.replace('-','') for p in df['Regn_Prefix']]
-    prefixes = list(df['Regn_Prefix'])
+    prefixes = list(df['Regn_Prefix']) + list(df['Old_Prefix'])
     if len(s) >= 4:
         return s[:1] in prefixes \
             or s[:2] in prefixes \
