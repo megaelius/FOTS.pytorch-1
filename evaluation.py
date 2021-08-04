@@ -186,6 +186,7 @@ if __name__ == '__main__':
                     if not len(annotations_name):
                         continue
                     annotations_name = annotations_name.item()[11:-4]
+                    print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for i,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
                         plate, confidence = recognize_plate(frame,net,device)
                         df['Model'].append(model)
