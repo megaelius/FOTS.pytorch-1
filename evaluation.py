@@ -195,7 +195,7 @@ if __name__ == '__main__':
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
                         if not k % 10:
                             plate, confidence = recognize_plate(frame,net,device)
-                            print(plate)
+                            #print(plate)
                             df['Model'].append(model)
                             df['Video'].append(annotations_name)
                             df['Frame'].append(k)
