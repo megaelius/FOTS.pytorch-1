@@ -128,7 +128,7 @@ def ocr_image(net, codec, im_data, detection):
   return det_text, conf2, dec_s
 
 
-def align_ocr(net, converter, im_data, boxo, features, debug=0):
+def align_ocr(net, converter, im_data, boxo, features,device, debug=0):
   # 将ocr区域的图像处理后进行识别
   boxr = boxo[0:8].reshape(-1, 2)
 
@@ -149,7 +149,7 @@ def align_ocr(net, converter, im_data, boxo, features, debug=0):
   target_gw = int(w * scale) + target_h
   target_gw = max(2, target_gw // 32) * 32
   rroialign = _RRoiAlign(target_h, target_gw, 1.0 / 4)
-  rois = torch.tensor(rroi).to(torch.float).cuda()
+  rois = torch.tensor(rroi).to(torch.float).to(device)
 
   # # 2. 对im_data进行rroi_align操作
   # x = rroialign(im_data, rois.view(-1, 6))

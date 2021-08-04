@@ -5,14 +5,12 @@ Created on Aug 31, 2017
 '''
 import torch
 
-def np_to_variable(x, is_cuda=True, dtype=torch.float32):
+def np_to_variable(x, dtype=torch.float32):
   v = torch.from_numpy(x).type(dtype)
-  if is_cuda:
-      v = v.cuda()
   return v
 
-def load_net(fname, net, optimizer=None):
-  sp = torch.load(fname) 
+def load_net(fname, net,device, optimizer=None):
+  sp = torch.load(fname,map_location=device)
   step = sp['step']
   try:
     learning_rate = sp['learning_rate']
@@ -29,14 +27,13 @@ def load_net(fname, net, optimizer=None):
     except:
       import traceback
       traceback.print_exc()
-  
-  if optimizer is not None:  
+
+  if optimizer is not None:
     try:
       optimizer.load_state_dict(opt_state)
     except:
       import traceback
       traceback.print_exc()
-  
+
   print(fname)
-  return step, learning_rate 
-  
+  return step, learning_rate
