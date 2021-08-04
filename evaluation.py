@@ -164,6 +164,7 @@ if __name__ == '__main__':
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
     with torch.no_grad():
         if args.videos_folder:
+            print('Processing Videos')
             LU_table = pd.read_csv('LU_table_annotations_automatic.csv',index_col=False)
             #print(LU_table['Video_file'])
             for i,model in enumerate(sorted(os.listdir(args.videos_folder))):
@@ -195,6 +196,7 @@ if __name__ == '__main__':
                         df['Pred_plate'].append(plate)
                         df['Confidence'].append(confidence)
         elif args.test_folder:
+            print('Processing Photos')
             for model in sorted(os.listdir(args.test_folder)):
                 if model in ['People','Objects']:
                     continue
