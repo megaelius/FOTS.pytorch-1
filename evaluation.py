@@ -172,7 +172,7 @@ if __name__ == '__main__':
                     continue
                 if i==1:break
                 model_path = os.path.join(args.videos_folder,model)
-                for j,video_name in enumerate(tqdm.tqdm(sorted(os.listdir(model_path)))):
+                for j,video_name in tqdm.tqdm(enumerate(sorted(os.listdir(model_path)))):
                     if video_name[0] == '.':
                         continue
                     if j==1:break
