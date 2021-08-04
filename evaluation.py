@@ -166,9 +166,11 @@ if __name__ == '__main__':
         if args.videos_folder:
             LU_table = pd.read_csv('LU_table_annotations_automatic.csv',index_col=False)
             #print(LU_table['Video_file'])
-            for model in sorted(os.listdir(args.videos_folder)):
+            for j,model in enumerate(sorted(os.listdir(args.videos_folder))):
                 if model[0] == '.':
                     continue
+                if j==1:
+                    break
                 model_path = os.path.join(args.videos_folder,model)
                 for video_name in tqdm.tqdm(sorted(os.listdir(model_path))):
                     if video_name[0] == '.':
