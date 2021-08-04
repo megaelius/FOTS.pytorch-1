@@ -172,12 +172,14 @@ if __name__ == '__main__':
                 if model[0] == '.':
                     continue
                 processed+=1
-                if processed==3:break
+                if processed==2:break
                 model_path = os.path.join(args.videos_folder,model)
+                p_videos=0
                 for j,video_name in tqdm.tqdm(enumerate(sorted(os.listdir(model_path)))):
                     if video_name[0] == '.':
                         continue
-                    #if j>0:break
+                    p_videos+=1
+                    if p_videos==2:break
                     #print(video_name)
                     video_path = os.path.join(model_path,video_name)
                     video = cv2.VideoCapture(video_path)
