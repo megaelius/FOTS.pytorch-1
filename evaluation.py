@@ -72,7 +72,7 @@ def frame_from_video(video):
 
 def recognize_plate(im,net,device,path=None,output_folder=None):
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
-    images = np.asarray([im_resized], dtype=np.float)
+    images = np.asarray([im_resized], dtype=float)
     images /= 128
     images -= 1
     im_data = net_utils.np_to_variable(images.transpose(0, 3, 1, 2))
