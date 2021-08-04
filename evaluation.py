@@ -177,7 +177,7 @@ if __name__ == '__main__':
                 for j,video_name in tqdm.tqdm(enumerate(sorted(os.listdir(model_path)))):
                     if video_name[0] == '.':
                         continue
-                    if j>0:break
+                    #if j>0:break
                     #print(video_name)
                     video_path = os.path.join(model_path,video_name)
                     video = cv2.VideoCapture(video_path)
