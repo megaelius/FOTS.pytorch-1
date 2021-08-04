@@ -166,15 +166,15 @@ if __name__ == '__main__':
         if args.videos_folder:
             LU_table = pd.read_csv('LU_table_annotations_automatic.csv',index_col=False)
             #print(LU_table['Video_file'])
-            for j,model in enumerate(sorted(os.listdir(args.videos_folder))):
+            for i,model in enumerate(sorted(os.listdir(args.videos_folder))):
                 if model[0] == '.':
                     continue
-                if j==1:
-                    break
+                if i==1:break
                 model_path = os.path.join(args.videos_folder,model)
-                for video_name in tqdm.tqdm(sorted(os.listdir(model_path))):
+                for j,video_name in enumerate(tqdm.tqdm(sorted(os.listdir(model_path)))):
                     if video_name[0] == '.':
                         continue
+                    if j==1:break
                     #print(video_name)
                     video_path = os.path.join(model_path,video_name)
                     video = cv2.VideoCapture(video_path)
@@ -187,11 +187,11 @@ if __name__ == '__main__':
                         continue
                     annotations_name = annotations_name.item()[11:-4]
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
-                    for i,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
+                    for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
                         plate, confidence = recognize_plate(frame,net,device)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
-                        df['Frame'].append(i)
+                        df['Frame'].append(k)
                         df['Pred_plate'].append(plate)
                         df['Confidence'].append(confidence)
         elif args.test_folder:
