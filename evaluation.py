@@ -170,12 +170,12 @@ if __name__ == '__main__':
             for i,model in enumerate(sorted(os.listdir(args.videos_folder))):
                 if model[0] == '.':
                     continue
-                if i==1:break
+                #if i==1:break
                 model_path = os.path.join(args.videos_folder,model)
                 for j,video_name in enumerate(tqdm.tqdm(sorted(os.listdir(model_path)))):
                     if video_name[0] == '.':
                         continue
-                    if j==1:break
+                    #if j==1:break
                     #print(video_name)
                     video_path = os.path.join(model_path,video_name)
                     video = cv2.VideoCapture(video_path)
@@ -190,6 +190,7 @@ if __name__ == '__main__':
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
                         plate, confidence = recognize_plate(frame,net,device)
+                        print(plate)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
                         df['Frame'].append(k)
