@@ -160,6 +160,7 @@ if __name__ == '__main__':
     net = ModelResNetSep2(attention=True, nclass=len(alphabet)+1)
     net_utils.load_net(args.model, net, device)
     net = net.eval()
+    net.to(device)
 
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
     with torch.no_grad():
