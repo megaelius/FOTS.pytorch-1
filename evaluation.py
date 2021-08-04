@@ -186,7 +186,7 @@ if __name__ == '__main__':
                         print(video_name)
                         continue
                     annotations_name = annotations_name.item()[11:-4]
-                    for i,frame in enumerate(frame_from_video(video)):
+                    for i,frame in enumerate(tqdm.tqdm(frame_from_video(video))):
                         plate, confidence = recognize_plate(frame,net,device)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
