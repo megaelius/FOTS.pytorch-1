@@ -189,13 +189,14 @@ if __name__ == '__main__':
                     annotations_name = annotations_name.item()[11:-4]
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
-                        plate, confidence = recognize_plate(frame,net,device)
-                        print(plate)
-                        df['Model'].append(model)
-                        df['Video'].append(annotations_name)
-                        df['Frame'].append(k)
-                        df['Pred_plate'].append(plate)
-                        df['Confidence'].append(confidence)
+                        if k % 10:
+                            plate, confidence = recognize_plate(frame,net,device)
+                            print(plate)
+                            df['Model'].append(model)
+                            df['Video'].append(annotations_name)
+                            df['Frame'].append(k)
+                            df['Pred_plate'].append(plate)
+                            df['Confidence'].append(confidence)
         elif args.test_folder:
             print('Processing Photos')
             for model in sorted(os.listdir(args.test_folder)):
