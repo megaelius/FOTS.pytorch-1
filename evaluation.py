@@ -115,7 +115,6 @@ def recognize_plate(im,net,device,path=None,output_folder=None):
         if is_plate(det_text) and conf > confidence:
             plate = det_text
             confidence = conf
-    print(plate, confidence)
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -183,7 +182,6 @@ if __name__ == '__main__':
                     num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
                     annotations_name = LU_table.loc[LU_table['Video_file'].apply(normalize2,form = 'NFC') == normalize('NFC',video_name)]['Annotation_file']
                     if not len(annotations_name):
-                        print(video_name)
                         continue
                     annotations_name = annotations_name.item()[11:-4]
                     for i,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
