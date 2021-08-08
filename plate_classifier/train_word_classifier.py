@@ -187,8 +187,8 @@ if __name__ == '__main__':
     weights = model.emb.weight.cpu().data.numpy()
     x = weights.transpose(1,0)[0]
     y = weights.transpose(1,0)[1]
-    print(x,y)
+    print(x,y,sorted(dataset.char_to_idx))
     plt.plot(x,y)
-    plt.text(x,y,s = sorted(dataset.char_to_idx).keys())
+    plt.text(x,y,s = sorted(dataset.char_to_idx))
     plt.savefig(os.path.join(args.output,'weigts.png'))
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
