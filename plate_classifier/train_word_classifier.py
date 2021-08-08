@@ -140,7 +140,7 @@ if __name__ == '__main__':
     seed = 1234
     bs = 1024
     num_workers = 2
-    epochs = 20
+    epochs = 1
 
     dataset = PlateClassificationDataset(args.data_path)
     n=len(dataset)
@@ -178,5 +178,9 @@ if __name__ == '__main__':
     # Save model
     if not Path(args.output).is_dir():
         Path(args.output).mkdir()
+
+    print(dataset.char_to_idx)
+    print(model.emb.data)
+    print(model.lin.data)
 
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
