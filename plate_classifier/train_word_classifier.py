@@ -64,7 +64,7 @@ class PlateNet(torch.nn.Module):
     def __init__(self, num_embeddings, embedding_dim):
         super().__init__()
         self.emb = torch.nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
-        self.lin = torch.nn.Linear(embedding_dim, 1)
+        self.lin = torch.nn.Linear(embedding_dim, 1, bias=False)
         self.pad = pad_sequence
     # B = Batch size
     # W = Number of context words (left + right)
