@@ -157,6 +157,8 @@ if __name__ == '__main__':
 
     model = PlateNet(num_embeddings = len(dataset.vocabulary), embedding_dim = 128)
 
+    model = model.to(device)
+
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
 
     optimizer = torch.optim.Adam(model.parameters())
