@@ -87,8 +87,8 @@ def train(model, dataloader, criterion, optimizer, batch_size, device, log=False
     ntokens = 0
     niterations = 0
     for sample in iter(dataloader):
-        X = sample['Indexes']
-        y = sample['Class']
+        X = sample['Indexes'].to(device)
+        y = sample['Class'].to(device)
 
         model.zero_grad()
         output = model(X).squeeze(1)
@@ -118,8 +118,8 @@ def validate(model, dataloader, criterion, batch_size, device):
     y_pred = []
     with torch.no_grad():
         for sample in iter(dataloader):
-            X = sample['Indexes']
-            y = sample['Class']
+            X = sample['Indexes'].to(device)
+            y = sample['Class'].to(device)
             output = model(X).squeeze(1)
             loss = criterion(output, y)
             total_loss += loss.item()
