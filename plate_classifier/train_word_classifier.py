@@ -181,7 +181,7 @@ if __name__ == '__main__':
         Path(args.output).mkdir()
     print(model.emb.weight.data.numpy())
     for char in sorted(dataset.char_to_idx):
-        print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].data.numpy()}')
+        print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].cpu().data.numpy()}')
     print(model.lin.weight)
 
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
