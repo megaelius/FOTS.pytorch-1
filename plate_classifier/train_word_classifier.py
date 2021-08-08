@@ -180,7 +180,7 @@ if __name__ == '__main__':
         Path(args.output).mkdir()
 
     print(dataset.char_to_idx)
-    print(model.emb.weights)
-    print(model.lin.weights)
+    print(model.emb.weight)
+    print(model.lin.weight)
 
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
