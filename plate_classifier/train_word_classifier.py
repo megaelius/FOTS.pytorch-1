@@ -179,7 +179,7 @@ if __name__ == '__main__':
     # Save model
     if not Path(args.output).is_dir():
         Path(args.output).mkdir()
-
+    print(model.emb.weight.data.numpy())
     for char in sorted(dataset.char_to_idx):
         print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].data.numpy()}')
     print(model.lin.weight)
