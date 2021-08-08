@@ -46,7 +46,7 @@ class PlateClassificationDataset(Dataset):
             for c in str(w):
                 self.vocabulary.add(c)
         print(self.vocabulary)
-        self.char_to_idx = {c:i for i,c in enumerate(self.vocabulary)}
+        self.char_to_idx = {c:i+1 for i,c in enumerate(self.vocabulary)}
         self.idx_to_char = [c for c in enumerate(self.vocabulary)]
 
     def __len__(self):
