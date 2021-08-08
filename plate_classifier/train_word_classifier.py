@@ -184,4 +184,7 @@ if __name__ == '__main__':
         print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].cpu().data.numpy()}')
     print(model.lin.weight)
 
+    plt.plot(model.emb.weight.cpu().data.numpy())
+    plt.text(model.emb.weight.cpu().data.numpy(),sorted(dataset.char_to_idx))
+    plt.savefig(os.path.join(args.output,'weigts.png'))
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
