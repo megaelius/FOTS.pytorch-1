@@ -189,6 +189,6 @@ if __name__ == '__main__':
     y = weights.transpose(1,0)[1]
     print(x,y)
     plt.plot(x,y)
-    plt.text(x,y,s = sorted(dataset.char_to_idx))
+    plt.text(x,y,s = sorted(dataset.char_to_idx.keys()))
     plt.savefig(os.path.join(args.output,'weigts.png'))
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
