@@ -140,7 +140,7 @@ if __name__ == '__main__':
     seed = 1234
     bs = 1024
     num_workers = 2
-    epochs = 1
+    epochs = 15
 
     dataset = PlateClassificationDataset(args.data_path)
     n=len(dataset)
