@@ -4,7 +4,36 @@ import argparse
 import numpy as np
 import pandas as pd
 
+from pathlib import Path
 from torch.utils.data import Dataset, DataLoader, random_split, RandomSampler
+from torch.nn.utils.rnn import pad_sequence
+
+def collate_fn_padd(batch):
+    '''
+    Padds batch of variable length
+
+    note: it converts things ToTensor manually here since the ToTensor transform
+    assume it takes in images rather than arbitrary tensors.
+    '''
+
+    ## get sequence lengths
+    lengths = torch.tensor([ len(s['Indexes']) for s in batch])
+    ## padd
+    idx = [ torch.tensor(s['Indexes']) for s in batch]
+    idx = torch.nn.utils.rnn.pad_sequence(idx,batch_first = True)
+    ## compute mask
+    mask = (idx != 0)
+
+    ## words
+    words = [s['Word'] for s in batch]
+
+    ## words
+    classes = torch.Tensor([s['Class'] for s in batch])
+
+    b = {'Word':words, 'Class': classes,
+         'Indexes': idx, 'Lengths': lengths,
+         'Mask': mask}
+    return b
 
 class PlateClassificationDataset(Dataset):
     def __init__(self, data_path):
@@ -17,22 +46,26 @@ class PlateClassificationDataset(Dataset):
             for c in str(w):
                 self.vocabulary.add(c)
         print(self.vocabulary)
+        self.char_to_idx = {c:i for i,c in enumerate(self.vocabulary)}
+        self.idx_to_char = [c for c in enumerate(self.vocabulary)]
 
     def __len__(self):
-            return len(self.words)
+        return len(self.words)
 
     def __getitem__(self, idx):
-            label = self.labels[idx]
-            word = self.words[idx]
-            sample = {"Word": word, "Class": label}
-            return sample
+        label = self.labels[idx]
+        word = str(self.words[idx])
+        idxs = [self.char_to_idx[c] for c in word]
+
+        sample = {"Word": word, "Indexes": idxs, "Class": label}
+        return sample
 
 class PlateNet(torch.nn.Module):
     def __init__(self, num_embeddings, embedding_dim):
         super().__init__()
         self.emb = torch.nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
         self.lin = torch.nn.Linear(embedding_dim, 1)
-
+        self.pad = pad_sequence
     # B = Batch size
     # W = Number of context words (left + right)
     # E = embedding_dim
@@ -54,17 +87,17 @@ def train(model, dataloader, criterion, optimizer, batch_size, device, log=False
     ntokens = 0
     niterations = 0
     for sample in iter(dataloader):
-        X = sample['Word']
+        X = sample['Indexes']
         y = sample['Class']
 
         model.zero_grad()
-        output = model(X)
+        output = model(X).squeeze(1)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
         # Training statistics
         total_loss += loss.item()
-        ncorrect += (output > 0.5 == y).sum().item()
+        ncorrect += ((output > 0.5) == y).sum().item()
         ntokens += y.numel()
         niterations += 1
         if niterations == 200 or niterations == 500 or niterations % 1000 == 0:
@@ -85,12 +118,12 @@ def validate(model, dataloader, criterion, batch_size, device):
     y_pred = []
     with torch.no_grad():
         for sample in iter(dataloader):
-            X = sample['Word']
+            X = sample['Indexes']
             y = sample['Class']
-            output = model(X)
+            output = model(X).squeeze(1)
             loss = criterion(output, y)
             total_loss += loss.item()
-            ncorrect += (output > 0.5 == y).sum().item()
+            ncorrect += ((output > 0.5) == y).sum().item()
             ntokens += y.numel()
             niterations += 1
 
@@ -117,14 +150,14 @@ if __name__ == '__main__':
     train_sample, val_sample = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(seed))
     train_sampler = RandomSampler(train_sample)
     val_sampler = RandomSampler(val_sample)
-    train_dataloader = DataLoader(train_sample, sampler = train_sampler, batch_size=bs, num_workers = num_workers)
-    val_dataloader = DataLoader(val_sample, sampler = val_sampler, batch_size=bs, num_workers = num_workers)
+    train_dataloader = DataLoader(train_sample, sampler = train_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
+    val_dataloader = DataLoader(val_sample, sampler = val_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    model = PlateNet(num_embeddings = len(dataset.vocabulary), embedding_dim = 512)
+    model = PlateNet(num_embeddings = len(dataset.vocabulary), embedding_dim = 128)
 
-    criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+    criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
 
     optimizer = torch.optim.Adam(model.parameters())
 
@@ -141,4 +174,7 @@ if __name__ == '__main__':
         print(f'| epoch {epoch:03d} | valid accuracy={acc:.1f}%, valid loss={loss:.2f}')
 
     # Save model
-    torch.save(model.state_dict(), params.modelname)
+    if not Path(args.output).is_dir():
+        Path(args.output).mkdir()
+
+    torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
