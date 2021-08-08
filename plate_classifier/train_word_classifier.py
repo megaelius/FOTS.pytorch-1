@@ -3,6 +3,7 @@ import torch
 import argparse
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader, random_split, RandomSampler
@@ -140,7 +141,7 @@ if __name__ == '__main__':
     seed = 1234
     bs = 1024
     num_workers = 2
-    epochs = 15
+    epochs = 1
 
     dataset = PlateClassificationDataset(args.data_path)
     n=len(dataset)
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         Path(args.output).mkdir()
 
     for char in sorted(dataset.char_to_idx):
-        print(f'{char} : {list(model.emb.weight[dataset.char_to_idx[char]].cpu.numpy())}')
+        print(f'{char} : {list(model.emb.weight[dataset.char_to_idx[char]].data)}')
     print(model.lin.weight)
 
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
