@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    model = PlateNet(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 8)
+    model = PlateNet(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2)
 
     model = model.to(device)
 
