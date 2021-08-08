@@ -179,8 +179,8 @@ if __name__ == '__main__':
     if not Path(args.output).is_dir():
         Path(args.output).mkdir()
 
-    print(dataset.char_to_idx)
-    print(model.emb.weight)
+    for char in sorted(dataset.char_to_idx):
+        print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]]}')
     print(model.lin.weight)
 
     torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
