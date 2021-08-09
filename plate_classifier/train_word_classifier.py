@@ -98,7 +98,7 @@ def train(model, dataloader, criterion, optimizer, batch_size, device, log=False
         optimizer.step()
         # Training statistics
         total_loss += loss.item()
-        ncorrect += ((output > 0.5) == y).sum().item()
+        ncorrect += ((torch.nn.Sigmoid()(output) > 0.8) == y).sum().item()
         ntokens += y.numel()
         niterations += 1
         if niterations == 200 or niterations == 500 or niterations % 1000 == 0:
@@ -124,7 +124,7 @@ def validate(model, dataloader, criterion, batch_size, device):
             output = model(X).squeeze(1)
             loss = criterion(output, y)
             total_loss += loss.item()
-            ncorrect += ((output > 0.5) == y).sum().item()
+            ncorrect += ((torch.nn.Sigmoid()(output) > 0.8) == y).sum().item()
             ntokens += y.numel()
             niterations += 1
 
@@ -141,11 +141,11 @@ if __name__ == '__main__':
     seed = 1234
     bs = 1024
     num_workers = 2
-    epochs = 15
+    epochs = 25
 
     dataset = PlateClassificationDataset(args.data_path)
     n=len(dataset)
-    n_train = int(n*0.8)
+    n_train = int(n*0.7)
     n_val = n-n_train
 
     train_sample, val_sample = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(seed))
@@ -179,16 +179,28 @@ if __name__ == '__main__':
     # Save model
     if not Path(args.output).is_dir():
         Path(args.output).mkdir()
+    torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
+
+    #Some analysis
     print(model.emb.weight.cpu().data.numpy())
     for char in sorted(dataset.char_to_idx):
         print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].cpu().data.numpy()}')
-    print(model.lin.weight)
-
+    print(model.lin.weight.cpu().data.numpy())
+    plane = model.lin.weight.cpu().data.numpy()[0]
     weights = model.emb.weight.cpu().data.numpy()
     x = weights.transpose(1,0)[0]
     y = weights.transpose(1,0)[1]
     print(x,y,sorted(dataset.char_to_idx))
     plt.scatter(x,y)
-    #plt.text(x,y,s = sorted(dataset.char_to_idx))
+    plt.quiver(0,0,plane[0],plane[1])
+    #define 2 points of the hyperplane that separates between plate and no plate
+    a = [2*plane[1],-2*plane[1]]
+    b = [-2*plane[0],2*plane[0]]
+    plt.plot(a,b, color='red')
+    for i in range(len(x)):
+        if i==0:
+            plt.text(x[i],y[i],s = 'pad')
+        else:
+            s = sorted(dataset.char_to_idx)[i-1]
+            plt.text(x[dataset.char_to_idx[s]],y[dataset.char_to_idx[s]],s = s)
     plt.savefig(os.path.join(args.output,'weigts.png'))
-    torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
