@@ -1,0 +1,10 @@
+setup.py
+rroi_align.egg-info/PKG-INFO
+rroi_align.egg-info/SOURCES.txt
+rroi_align.egg-info/dependency_links.txt
+rroi_align.egg-info/top_level.txt
+src/module.cpp
+src/roi_pooling.cpp
+src/rroi_align_cpu.cpp
+src/rroi_align_cuda.cpp
+src/rroi_align_kernel.cu

@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Function
 
-from rroi_align_cpp import rroi_align_forward, rroi_align_backward
+from rroi_align_cpp import rroi_align_forward_cuda, rroi_align_backward_cuda, rroi_align_forward_cpu, rroi_align_backward_cpu
 
 class RRoiAlignFunction(Function):
     @staticmethod
@@ -22,20 +22,26 @@ class RRoiAlignFunction(Function):
         #     roi_pooling.roi_pooling_forward(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
         #                     _features, rois, output)
         # else:
-        assert features.is_cuda
-
-        rroi_align_forward(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
-                    features, rois, output, ctx.idx_x, ctx.idx_y)
-
+        if features.is_cuda:
+            rroi_align_forward_cuda(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
+                        features, rois, output, ctx.idx_x, ctx.idx_y)
+        else:
+            rroi_align_forward_cpu(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
+                        features, rois, output, ctx.idx_x, ctx.idx_y)
+        print(output.shape,output.sum())
+        print(output)
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        assert(ctx.feature_size is not None and grad_output.is_cuda)
+        assert(ctx.feature_size is not None)
         batch_size, num_channels, data_height, data_width = ctx.feature_size
         grad_input = grad_output.new(batch_size, num_channels, data_height, data_width).zero_().float()
 
-        rroi_align_backward(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
-                    grad_output, ctx.rois, grad_input, ctx.idx_x, ctx.idx_y)
-
+        if grad_output.is_cuda:
+            rroi_align_backward_cuda(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
+                        grad_output, ctx.rois, grad_input, ctx.idx_x, ctx.idx_y)
+        else:
+            rroi_align_backward_cpu(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
+                        grad_output, ctx.rois, grad_input, ctx.idx_x, ctx.idx_y)
         return None, None, None, grad_input, None

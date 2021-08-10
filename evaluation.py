@@ -132,13 +132,13 @@ def recognize_plate(im,net,device,path=None,output_folder=None):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-cuda', type=int, default=1)
-    parser.add_argument('-model', default='./weights/FOTS_280000.h5')
+    parser.add_argument('--cuda', type=int, default=1)
+    parser.add_argument('--model', default='./weights/FOTS_280000.h5')
     # parser.add_argument('-model', default='./weights/e2e-mlt.h5')
-    parser.add_argument('-segm_thresh', default=0.5)
-    parser.add_argument('-test_folder')
-    parser.add_argument('-videos_folder')
-    parser.add_argument('-output', default='./data/ICDAR2015')
+    parser.add_argument('--segm_thresh', default=0.5)
+    parser.add_argument('--test_folder')
+    parser.add_argument('--videos_folder')
+    parser.add_argument('--output', default='./data/ICDAR2015')
 
     font2 = ImageFont.truetype("./tools/Arial-Unicode-Regular.ttf", 18)
 
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence = recognize_plate(frame,net,device,path,args.output)
+                    plate, confidence = recognize_plate(im,net,device,path,args.output)
 
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])

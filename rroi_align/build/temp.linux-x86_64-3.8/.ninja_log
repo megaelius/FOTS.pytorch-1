@@ -1,0 +1,16 @@
+# ninja log v5
+1	4094	1628583101470121095	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_kernel.o	c6fabeedae8e45e3
+0	20451	1628583117826085394	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/roi_pooling.o	73890a628fa42dba
+1	21043	1628583118414068960	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cuda.o	296ccb8be5f98a54
+1	29956	1628583127329830421	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/module.o	10fe7ed38c6fcd8e
+1	11880	1628584120779353575	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	11652	1628584200567505260	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	12009	1628585992052426711	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	12393	1628586995854132074	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	11538	1628587011649983894	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	11470	1628587279456082904	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	11867	1628587557014971144	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	12573	1628587904478272732	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+2	11449	1628588065634104212	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+1	11931	1628588494713917784	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
+2	11464	1628588573605910233	/home/elias/IRI/2.Plate_Recognition/FOTS.pytorch-1/rroi_align/build/temp.linux-x86_64-3.8/src/rroi_align_cpu.o	1b054581d663f6b0
