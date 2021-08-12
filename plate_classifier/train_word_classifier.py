@@ -1,6 +1,7 @@
 import os
 import torch
 import argparse
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -71,7 +72,7 @@ class PlateNet(torch.nn.Module):
     # W = Number of context words (left + right)
     # E = embedding_dim
     # V = num_embeddings (number of words)
-    def forward(self, input):
+    def forward(self, input, input_lengths):
         # input shape is (B, W)
         e = self.emb(input)
         # e shape is (B, W, E)
@@ -80,6 +81,36 @@ class PlateNet(torch.nn.Module):
         v = self.lin(u)
         # v shape is (B, V)
         return v
+
+class PlateRNN(torch.nn.Module):
+
+    def __init__(self, num_embeddings, embedding_dim, hidden_size, output_size, num_layers=1, bidirectional=False):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.embed = torch.nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
+        self.rnn = torch.nn.LSTM(embedding_dim, hidden_size, num_layers, bidirectional=bidirectional)
+        if bidirectional:
+            self.h2o = torch.nn.Linear(2*hidden_size, output_size)
+        else:
+            self.h2o = torch.nn.Linear(hidden_size, output_size)
+
+    def forward(self, input, input_lengths):
+        # T x B
+        encoded = self.embed(input)
+        # T x B x E
+        packed = torch.nn.utils.rnn.pack_padded_sequence(encoded, input_lengths, batch_first = True)
+        # Packed T x B x E
+        output, _ = self.rnn(packed)
+        # Packed T x B x E
+
+        # Important: you may need to replace '-inf' with the default zero padding for other pooling layers
+        padded, _ = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first = True)
+        # T x B x H
+        output = padded.sum(dim=1)
+        # B x H
+        output = self.h2o(output)
+        # B x O
+        return output
 
 def train(model, dataloader, criterion, optimizer, batch_size, device, log=False):
     model.train()
@@ -91,8 +122,9 @@ def train(model, dataloader, criterion, optimizer, batch_size, device, log=False
         X = sample['Indexes'].to(device)
         y = sample['Class'].to(device)
 
+        input_lengths = [len(x) for x in X]
         model.zero_grad()
-        output = model(X).squeeze(1)
+        output = model(X,input_lengths).squeeze(1)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
@@ -121,7 +153,8 @@ def validate(model, dataloader, criterion, batch_size, device):
         for sample in iter(dataloader):
             X = sample['Indexes'].to(device)
             y = sample['Class'].to(device)
-            output = model(X).squeeze(1)
+            input_lengths = [len(x) for x in X]
+            output = model(X,input_lengths).squeeze(1)
             loss = criterion(output, y)
             total_loss += loss.item()
             ncorrect += ((torch.nn.Sigmoid()(output) > 0.8) == y).sum().item()
@@ -133,6 +166,7 @@ def validate(model, dataloader, criterion, batch_size, device):
     return accuracy, total_loss
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str)
     parser.add_argument('--output',type=str)
@@ -156,8 +190,8 @@ if __name__ == '__main__':
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+    #model = PlateRNN(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2, hidden_size = 2, output_size = 1, bidirectional = True)
     model = PlateNet(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2)
-
     model = model.to(device)
 
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
@@ -179,9 +213,20 @@ if __name__ == '__main__':
     # Save model
     if not Path(args.output).is_dir():
         Path(args.output).mkdir()
-    torch.save(model.state_dict(), os.path.join(args.output,'weigts.pt'))
+    torch.save(model, os.path.join(args.output,'weights.pt'))
+
+    #Save char to index dictionary
+    with open(os.path.join(args.output,'char_to_idx.pkl'), 'wb') as handle:
+        pickle.dump(dataset.char_to_idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     #Some analysis
+    '''
+    model = torch.load(os.path.join(args.output,'weights.pt'), map_location = device)
+
+    #Load char to index dictionary
+    with open(os.path.join(args.output,'char_to_idx.pkl'), 'rb') as handle:
+        char_to_idx = pickle.load(handle)
+    dataset.char_to_idx = char_to_idx
     print(model.emb.weight.cpu().data.numpy())
     for char in sorted(dataset.char_to_idx):
         print(f'{char} : {model.emb.weight[dataset.char_to_idx[char]].cpu().data.numpy()}')
@@ -203,4 +248,5 @@ if __name__ == '__main__':
         else:
             s = sorted(dataset.char_to_idx)[i-1]
             plt.text(x[dataset.char_to_idx[s]],y[dataset.char_to_idx[s]],s = s)
-    plt.savefig(os.path.join(args.output,'weigts.png'))
+    plt.savefig(os.path.join(args.output,'weights.png'))
+    '''

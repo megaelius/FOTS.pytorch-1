@@ -28,8 +28,6 @@ class RRoiAlignFunction(Function):
         else:
             rroi_align_forward_cpu(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
                         features, rois, output, ctx.idx_x, ctx.idx_y)
-        print(output.shape,output.sum())
-        print(output)
         return output
 
     @staticmethod

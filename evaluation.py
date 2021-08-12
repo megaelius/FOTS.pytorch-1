@@ -7,16 +7,19 @@ Created on 2019-06-30
 import os
 import cv2
 import glob
+import time
 import tqdm
 import numpy as np
 import pandas as pd
 import torch
+import pickle
 import argparse
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from pathlib import Path
 from unicodedata import normalize
+from torch.nn.utils.rnn import pad_sequence
 
 from nms import get_boxes
 
@@ -63,14 +66,75 @@ def normalize2(s,form: str):
     return normalize(form,s)
 
 def frame_from_video(video):
-        while video.isOpened():
-            success, frame = video.read()
+    i = 0
+    while video.isOpened():
+        success, frame = video.read()
+        if not i % 10:
             if success:
                 yield frame
             else:
                 break
+        i+=1
 
-def recognize_plate(im,net,device,path=None,output_folder=None):
+def index_chars(word,char_to_idx):
+    result = []
+    for char in word:
+        if char in char_to_idx:
+            result.append(char_to_idx[char])
+        else:
+            result.append(0)
+    return result
+
+class PlateNet(torch.nn.Module):
+    def __init__(self, num_embeddings, embedding_dim):
+        super().__init__()
+        self.emb = torch.nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
+        self.lin = torch.nn.Linear(embedding_dim, 1, bias=False)
+    # B = Batch size
+    # W = Number of context words (left + right)
+    # E = embedding_dim
+    # V = num_embeddings (number of words)
+    def forward(self, input):
+        # input shape is (B, W)
+        e = self.emb(input)
+        # e shape is (B, W, E)
+        u = e.sum(dim=1)
+        # u shape is (B, E)
+        v = self.lin(u)
+        # v shape is (B, V)
+        return v
+
+class PlateRNN(torch.nn.Module):
+
+    def __init__(self, num_embeddings, embedding_dim, hidden_size, output_size, num_layers=1, bidirectional=False):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.embed = torch.nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
+        self.rnn = torch.nn.LSTM(embedding_dim, hidden_size, num_layers, bidirectional=bidirectional)
+        if bidirectional:
+            self.h2o = torch.nn.Linear(2*hidden_size, output_size)
+        else:
+            self.h2o = torch.nn.Linear(hidden_size, output_size)
+
+    def forward(self, input, input_lengths):
+        # T x B
+        encoded = self.embed(input)
+        # T x B x E
+        packed = torch.nn.utils.rnn.pack_padded_sequence(encoded, input_lengths, batch_first = True)
+        # Packed T x B x E
+        output, _ = self.rnn(packed)
+        # Packed T x B x E
+
+        # Important: you may need to replace '-inf' with the default zero padding for other pooling layers
+        padded, _ = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first = True)
+        # T x B x H
+        output = padded.sum(dim=1)
+        # B x H
+        output = self.h2o(output)
+        # B x O
+        return output
+
+def recognize_plate(im,net,platenet,char_to_idx,device,path=None,output_folder=None):
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
     images = np.asarray([im_resized], dtype=float)
     images /= 128
@@ -94,9 +158,12 @@ def recognize_plate(im,net,device,path=None,output_folder=None):
     img = Image.fromarray(draw2)
     draw = ImageDraw.Draw(img)
 
+    platenet.eval()
     out_boxes = []
+    texts = []
     plate = None
     confidence = 0
+
     for box in boxes:
 
         pts  = box[0:8]
@@ -106,15 +173,28 @@ def recognize_plate(im,net,device,path=None,output_folder=None):
         det_text, conf, dec_s = align_ocr(net, converter, im_data, box, features,device, debug=0)
         if len(det_text) == 0:
           continue
-
+        texts.append(det_text)
         width, height = draw.textsize(det_text, font=font2)
         center =  [box[0], box[1]]
         draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
         out_boxes.append(box)
         #print(det_text, conf, dec_s)
+        '''
         if is_plate(det_text) and conf > confidence:
             plate = det_text
             confidence = conf
+        '''
+    with torch.no_grad():
+        texts_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in texts]
+        if len(texts_idx) > 0:
+            sequences= pad_sequence(texts_idx, batch_first = True).to(device)
+            input_lengths = [len(s) for s in sequences]
+            output = platenet(sequences,input_lengths)
+            val, idx = torch.max(torch.nn.Sigmoid()(output),dim=0)
+            if val > 0.9:
+                plate = texts[idx]
+                confidence = val
+
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -127,13 +207,18 @@ def recognize_plate(im,net,device,path=None,output_folder=None):
             Path(os.path.join(output_folder, path.split('/')[-3])).mkdir()
         out_filename = os.path.join(output_folder, path.split('/')[-3], os.path.basename(path))
         cv2.imwrite(out_filename, im)
-    return plate, confidence
+    return plate, float(confidence)
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--cuda', type=int, default=1)
     parser.add_argument('--model', default='./weights/FOTS_280000.h5')
+    parser.add_argument('--plate_model', default='../out/Model_1')
+
     # parser.add_argument('-model', default='./weights/e2e-mlt.h5')
     parser.add_argument('--segm_thresh', default=0.5)
     parser.add_argument('--test_folder')
@@ -160,6 +245,17 @@ if __name__ == '__main__':
     net_utils.load_net(args.model, net, device)
     net = net.eval()
     net.to(device)
+    print(net)
+    print(count_parameters(net))
+
+    #Load char to index dictionary
+    with open(os.path.join(args.plate_model,'char_to_idx.pkl'), 'rb') as handle:
+        char_to_idx = pickle.load(handle)
+
+    #platenet = PlateNet(num_embeddings = len(char_to_idx) + 1, embedding_dim = 2)
+    platenet = torch.load(os.path.join(args.plate_model,'weights.pt'), map_location = device)
+    platenet.eval()
+    platenet.to(device)
 
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
     with torch.no_grad():
@@ -193,14 +289,14 @@ if __name__ == '__main__':
                     annotations_name = annotations_name.item()[11:-4]
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
-                        if not k % 10:
-                            plate, confidence = recognize_plate(frame,net,device)
-                            #print(plate)
-                            df['Model'].append(model)
-                            df['Video'].append(annotations_name)
-                            df['Frame'].append(k)
-                            df['Pred_plate'].append(plate)
-                            df['Confidence'].append(confidence)
+
+                        plate, confidence = recognize_plate(frame,net,platenet,char_to_idx,device)
+                        #print(plate)
+                        df['Model'].append(model)
+                        df['Video'].append(annotations_name)
+                        df['Frame'].append(k)
+                        df['Pred_plate'].append(plate)
+                        df['Confidence'].append(confidence)
         elif args.test_folder:
             print('Processing Photos')
             for model in sorted(os.listdir(args.test_folder)):
@@ -210,8 +306,8 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence = recognize_plate(im,net,device,path,args.output)
-
+                    plate, confidence = recognize_plate(im,net,platenet,char_to_idx,device,path,args.output)
+                    #print(plate, confidence)
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])
                     df['Frame'].append(int(image_name[-8:-4]))
