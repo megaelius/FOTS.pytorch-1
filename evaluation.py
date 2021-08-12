@@ -94,7 +94,7 @@ class PlateNet(torch.nn.Module):
     # W = Number of context words (left + right)
     # E = embedding_dim
     # V = num_embeddings (number of words)
-    def forward(self, input):
+    def forward(self, input, input_lengths):
         # input shape is (B, W)
         e = self.emb(input)
         # e shape is (B, W, E)
