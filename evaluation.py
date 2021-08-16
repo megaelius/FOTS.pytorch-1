@@ -194,7 +194,7 @@ def recognize_plate(im,net,platenet,char_to_idx,device,path=None,output_folder=N
             if val > 0.9:
                 plate = texts[idx]
                 confidence = val
-
+    print(texts)
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     parser.add_argument('--plate_model', default='../out/Model_1')
 
     # parser.add_argument('-model', default='./weights/e2e-mlt.h5')
-    parser.add_argument('--segm_thresh', default=0.5)
+    parser.add_argument('--segm_thresh', type=float,default=0.5)
     parser.add_argument('--test_folder')
     parser.add_argument('--videos_folder')
     parser.add_argument('--output', default='./data/ICDAR2015')
