@@ -9,7 +9,7 @@ files = (glob('**/*.cpp', recursive=True)
 print('Source Files:')
 print(files)
 
-'''
+
 cuda_architectures = ['-gencode=arch=compute_70,code=sm_70',
               '-gencode=arch=compute_75,code=compute_75',
               '-gencode=arch=compute_75,code=sm_75']
@@ -18,7 +18,7 @@ cuda_architectures = ['-gencode=arch=compute_70,code=sm_70',
                       '-gencode=arch=compute_70,code=compute_70',
                       '-gencode=arch=compute_72,code=sm_72',
                       '-gencode=arch=compute_72,code=compute_72']
-
+'''
 common_args = ['-std=c++14']
 #common_args = ['-std=c++14', '-g', '-O0']
 compile_args = {

@@ -194,7 +194,7 @@ def recognize_plate(im,net,platenet,char_to_idx,device,path=None,output_folder=N
             if val > 0.9:
                 plate = texts[idx]
                 confidence = val
-    print(texts)
+    #print(texts)
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
