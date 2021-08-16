@@ -14,7 +14,8 @@ cuda_architectures = ['-gencode=arch=compute_70,code=sm_70',
               '-gencode=arch=compute_75,code=compute_75',
               '-gencode=arch=compute_75,code=sm_75']
 '''
-cuda_architectures = ['-gencode=arch=compute_70,code=sm_70']
+cuda_architectures = ['-gencode=arch=compute_70,code=sm_70',
+                      '-gencode=arch=compute_70,code=compute_70']
 
 common_args = ['-std=c++14']
 #common_args = ['-std=c++14', '-g', '-O0']
