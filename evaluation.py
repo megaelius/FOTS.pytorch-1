@@ -6,6 +6,7 @@ Created on 2019-06-30
 
 import os
 import cv2
+import copy
 import glob
 import time
 import tqdm
@@ -20,6 +21,7 @@ from PIL import ImageDraw
 from pathlib import Path
 from unicodedata import normalize
 from torch.nn.utils.rnn import pad_sequence
+from collections import deque
 
 from nms import get_boxes
 
@@ -69,7 +71,7 @@ def frame_from_video(video):
     i = 0
     while video.isOpened():
         success, frame = video.read()
-        if not i % 10:
+        if not i % 100:
             if success:
                 yield frame
             else:
@@ -134,7 +136,83 @@ class PlateRNN(torch.nn.Module):
         # B x O
         return output
 
-def recognize_plate(im,net,platenet,char_to_idx,device,path=None,output_folder=None):
+def confusable_plates(plate):
+    confusions = [['3','8','B','R'],
+                  ['I','1','T','L'],
+                  ['7','T'],
+                  ['A','4'],
+                  ['0','O','Q','D'],
+                  ['Z','2'],
+                  ['G','6'],
+                  ['G','C'],
+                  ['M','N'],
+                  ['Y','V'],
+                  ['U','J'],
+                  ['K','X'],
+                  ['E','F'],
+                  ['5','S','9']]
+    #Create confusion map with every character as key and
+    #its possible confussions as values
+    conf_map = {}
+    for conf in confusions:
+        for i in range(len(conf)):
+            values = []
+            key = conf[i]
+            for j in range(len(conf)):
+                if j != i:
+                    values.append(conf[j])
+            if key in conf_map:
+                conf_map[key] += values
+            else:
+                conf_map[key] = values
+    #initiallize list with empty character
+    n = 1
+    out = [('',0)]
+    for i in range(len(plate)):
+        newout = []
+        conf = [plate[i]]
+        if plate[i] in conf_map:
+            conf += conf_map[plate[i]]
+        n*=len(conf)
+        for char in conf:
+            for w,edits in out:
+                newout.append((w+char,edits + (char!=plate[i])))
+        out = newout
+    return dict(out)
+
+
+
+
+    '''
+    #Iterate over characters, keep a list of candidates to modify them at the
+    #actual position and add new candidates
+    out = {plate:0}
+    candidates = deque()
+    candidates.append((plate,0))
+    i = 0
+    while i < len(plate):
+        if plate[i] in conf_map:
+            while len(candidates):
+                p,edits = candidates.pop()
+                char = p[i]
+                newcand = []
+                newcand.append((p,edits))
+                for cp in conf_map[char]:
+                    pp = list(p)
+                    print(p)
+                    pp[i] = cp
+                    pp = ''.join(pp)
+                    print(pp)
+                    out[pp] = edits+1
+                    newcand.append((pp,edits+1))
+            for cand in newcand:
+                candidates.append(cand)
+        i += 1
+    '''
+    return out
+
+
+def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output_folder=None):
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
     images = np.asarray([im_resized], dtype=float)
     images /= 128
@@ -191,10 +269,25 @@ def recognize_plate(im,net,platenet,char_to_idx,device,path=None,output_folder=N
             input_lengths = [len(s) for s in sequences]
             output = platenet(sequences,input_lengths)
             val, idx = torch.max(torch.nn.Sigmoid()(output),dim=0)
-            if val > 0.9:
-                plate = texts[idx]
-                confidence = val
-    #print(texts)
+            plate = texts[idx]
+            confidence = val
+
+    if plate is not None:
+        if plate not in plateset:
+            plates_and_edits = confusable_plates(plate)
+            possible_plates = set(plates_and_edits.keys())
+            plates = possible_plates.intersection(plateset)
+            if len(plates) > 0:
+                plate = None
+                min = 100
+                for p in plates:
+                    edits = plates_and_edits[p]
+                    if edits < min:
+                        plate = p
+                        min = edits
+            else:
+                plate = None
+                confidence = 0
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -248,6 +341,13 @@ if __name__ == '__main__':
     print(net)
     print(count_parameters(net))
 
+    #Load plateset
+    with open('../../Data/PlateSet.pkl', 'rb') as f:
+        plateset = pickle.load(f)
+
+    #print('N818LS' in plateset)
+    #print('N818LS' in confusable_plates('NB1BLS'))
+
     #Load char to index dictionary
     with open(os.path.join(args.plate_model,'char_to_idx.pkl'), 'rb') as handle:
         char_to_idx = pickle.load(handle)
@@ -290,7 +390,7 @@ if __name__ == '__main__':
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
 
-                        plate, confidence = recognize_plate(frame,net,platenet,char_to_idx,device)
+                        plate, confidence = recognize_plate(frame,net,platenet,plateset,char_to_idx,device)
                         #print(plate)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
@@ -306,7 +406,7 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence = recognize_plate(im,net,platenet,char_to_idx,device,path,args.output)
+                    plate, confidence = recognize_plate(im,net,platenet,plateset,char_to_idx,device,path,args.output)
                     #print(plate, confidence)
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])

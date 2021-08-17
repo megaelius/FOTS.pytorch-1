@@ -25,5 +25,5 @@ def get_boxes(iou_map, rbox, angle_pred, segm_thresh=0.5):
   poly_map = np.zeros((iou_map.shape[0], iou_map.shape[1]), dtype = np.int32)
   poly_map.fill(-1);
 
-  boxes = do_nms( iou_map, rbox, angle_pred, poly_map, 0.9, 0.9, segm_thresh)
+  boxes = do_nms( iou_map, rbox, angle_pred, poly_map, 0.5, 0.4, segm_thresh)
   return boxes
