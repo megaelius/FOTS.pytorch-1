@@ -546,8 +546,8 @@ trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
 model_folder = '../../out/Model_seq-to-seq'
 if not Path(model_folder).exists():
     Path(model_folder).mkdir()
-torch.save(os.path.join(model_folder,'weights_encoder.pt'),encoder1)
-torch.save(os.path.join(model_folder,'weights_decoder.pt'),decoder1)
+torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
+torch.save(decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 ######################################################################
 # Exercises
 # =========
