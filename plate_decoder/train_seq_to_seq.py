@@ -110,7 +110,7 @@ class PlateCorrectionDataset(Dataset):
 
 #dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
 dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
-print(dataset[0])   
+print(dataset[0])
 seed = 1234
 bs = 1
 num_workers = 2
@@ -357,8 +357,8 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    input_tensor = sample['In_idxs'].squeeze(0)
-    target_tensor = sample['Out_idxs'].squeeze(0)
+    input_tensor = sample['In_idxs'].squeeze(0).to(device)
+    target_tensor = sample['Out_idxs'].squeeze(0).to(device)
     input_length = sample['In_lengths'].squeeze(0)
     target_length = sample['Out_lengths'].squeeze(0)
 
