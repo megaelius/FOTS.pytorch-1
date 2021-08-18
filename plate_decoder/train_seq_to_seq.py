@@ -547,7 +547,7 @@ model_folder = '../../out/Model_seq-to-seq'
 if not Path(model_folder).is_dir():
     Path(model_folder).mkdir()
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
-torch.save(decoder1,os.path.join(model_folder,'weights_decoder.pt'))
+torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 ######################################################################
 # Exercises
 # =========
