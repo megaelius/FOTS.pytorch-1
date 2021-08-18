@@ -476,6 +476,7 @@ def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, l
                                          i, i / n_iters * 100, print_loss_avg))
 
         if (i+1) % plot_every == 0:
+            print('Plot point')
             plot_loss_avg = plot_loss_total / plot_every
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
