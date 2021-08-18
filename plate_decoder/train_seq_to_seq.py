@@ -108,8 +108,9 @@ class PlateCorrectionDataset(Dataset):
                   "Out_plate": out_plate, "Out_idxs": out_idxs}
         return sample
 
-dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
-print(dataset[0])
+#dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
+dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
+print(dataset[0])   
 seed = 1234
 bs = 1
 num_workers = 2
