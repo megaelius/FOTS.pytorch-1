@@ -450,7 +450,7 @@ def showPlot(points):
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
-    plt.savefig(os.path.join(model_folder,'loss.png')
+    plt.savefig(os.path.join(model_folder,'loss.png'))
 
 def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
