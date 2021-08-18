@@ -57,7 +57,7 @@ class PlateCorrectionDataset(Dataset):
     def __init__(self, data_pkl, data_alphabet):
         #random.seed(1234)
         with open(data_pkl, 'rb') as f:
-            self.plates = list(pickle.load(f))[:10000]
+            self.plates = list(pickle.load(f))[:1000]
         print(f'MAX LENGTH: {max([len(p) for p in self.plates])}')
         self.alphabet = set()
         with open(data_alphabet, 'rb') as f:
@@ -127,6 +127,10 @@ train_dataloader = DataLoader(train_sample, sampler = train_sampler, batch_size=
 val_dataloader = DataLoader(val_sample, sampler = val_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
 
 MAX_LENGTH = 17
+
+model_folder = '../../out/Model_seq-to-seq'
+if not Path(model_folder).is_dir():
+    Path(model_folder).mkdir()
 
 #input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
 #print(random.choice(pairs))
@@ -446,7 +450,7 @@ def showPlot(points):
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
-    plt.savefig('../../out/Model_seq-to-seq/loss.png')
+    plt.savefig(os.path.join(model_folder,'loss.png')
 
 def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
@@ -543,9 +547,6 @@ attn_decoder1 = AttnDecoderRNN(hidden_size, len(dataset.idx_to_char), dropout_p=
 
 trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
 
-model_folder = '../../out/Model_seq-to-seq'
-if not Path(model_folder).is_dir():
-    Path(model_folder).mkdir()
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 ######################################################################
