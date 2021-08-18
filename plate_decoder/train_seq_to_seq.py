@@ -81,7 +81,7 @@ class PlateCorrectionDataset(Dataset):
         #iterate over characters and randomly change them
         for i in range(len(char_list)):
             #randomly change the character with 0.1 probability
-            if random.random() <= 0.05:
+            if random.random() <= 0.075:
                 char_list[i] = random.sample(self.alphabet,1)[0]
         #randomly eliminate characters from back or beginning
         if random.random() <= 0.2:
@@ -439,6 +439,15 @@ def timeSince(since, percent):
 # of examples, time so far, estimated time) and average loss.
 #
 
+def showPlot(points):
+    plt.figure()
+    fig, ax = plt.subplots()
+    # this locator puts ticks at regular intervals
+    loc = ticker.MultipleLocator(base=0.2)
+    ax.yaxis.set_major_locator(loc)
+    plt.plot(points)
+    plt.savefig('../../out/Model_seq-to-seq/loss.png')
+
 def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     plot_losses = []
@@ -473,15 +482,6 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
-
-
-def showPlot(points):
-    plt.figure()
-    fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
-    loc = ticker.MultipleLocator(base=0.2)
-    ax.yaxis.set_major_locator(loc)
-    plt.plot(points)
 
 def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     with torch.no_grad():
