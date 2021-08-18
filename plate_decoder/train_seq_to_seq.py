@@ -544,7 +544,7 @@ attn_decoder1 = AttnDecoderRNN(hidden_size, len(dataset.idx_to_char), dropout_p=
 trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
 
 model_folder = '../../out/Model_seq-to-seq'
-if not Path(model_folder).exists():
+if not Path(model_folder).is_dir():
     Path(model_folder).mkdir()
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(decoder1,os.path.join(model_folder,'weights_decoder.pt'))
