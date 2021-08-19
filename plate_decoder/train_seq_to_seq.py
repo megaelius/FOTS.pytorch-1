@@ -317,7 +317,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_length.sum(0)
+    return loss.item()
 
 
 ######################################################################
