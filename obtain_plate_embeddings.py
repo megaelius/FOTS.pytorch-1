@@ -87,7 +87,7 @@ if __name__ == '__main__':
     tree = spatial.KDTree(output)
 
     with torch.no_grad():
-        plate_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in ['JA6']]
+        plate_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in ['S2-AJ']]
         seq = pad_sequence(plate_idx, batch_first = True).to(device)
         emb = platenet.emb(seq).sum(dim=1).numpy()
     print(emb)

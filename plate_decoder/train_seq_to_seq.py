@@ -113,278 +113,213 @@ class PlateCorrectionDataset(Dataset):
                   "Out_plate": out_plate, "Out_idxs": out_idxs}
         return sample
 
-######################################################################
-# The Seq2Seq Model
-# =================
-#
-# A Recurrent Neural Network, or RNN, is a network that operates on a
-# sequence and uses its own output as input for subsequent steps.
-#
-# A `Sequence to Sequence network <https://arxiv.org/abs/1409.3215>`__, or
-# seq2seq network, or `Encoder Decoder
-# network <https://arxiv.org/pdf/1406.1078v3.pdf>`__, is a model
-# consisting of two RNNs called the encoder and decoder. The encoder reads
-# an input sequence and outputs a single vector, and the decoder reads
-# that vector to produce an output sequence.
-#
-# .. figure:: /_static/img/seq-seq-images/seq2seq.png
-#    :alt:
-#
-# Unlike sequence prediction with a single RNN, where every input
-# corresponds to an output, the seq2seq model frees us from sequence
-# length and order, which makes it ideal for translation between two
-# languages.
-#
-# Consider the sentence "Je ne suis pas le chat noir" → "I am not the
-# black cat". Most of the words in the input sentence have a direct
-# translation in the output sentence, but are in slightly different
-# orders, e.g. "chat noir" and "black cat". Because of the "ne/pas"
-# construction there is also one more word in the input sentence. It would
-# be difficult to produce a correct translation directly from the sequence
-# of input words.
-#
-# With a seq2seq model the encoder creates a single vector which, in the
-# ideal case, encodes the "meaning" of the input sequence into a single
-# vector — a single point in some N dimensional space of sentences.
-#
-
-
-######################################################################
-# The Encoder
-# -----------
-#
-# The encoder of a seq2seq network is a RNN that outputs some value for
-# every word from the input sentence. For every input word the encoder
-# outputs a vector and a hidden state, and uses the hidden state for the
-# next input word.
-#
-# .. figure:: /_static/img/seq-seq-images/encoder-network.png
-#    :alt:
-#
-#
-
 class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, n_layers=1, dropout=0):
         super(EncoderRNN, self).__init__()
+        self.n_layers = n_layers
         self.hidden_size = hidden_size
-
         self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
 
-    def forward(self, input, hidden):
-        embedded = self.embedding(input).view(1, 1, -1)
-        output = embedded
-        output, hidden = self.gru(output, hidden)
-        return output, hidden
+        # Initialize GRU; the input_size and hidden_size params are both set to 'hidden_size'
+        #   because our input size is a word embedding with number of features == hidden_size
+        self.gru = nn.GRU(hidden_size, hidden_size, n_layers,
+                          dropout=(0 if n_layers == 1 else dropout), bidirectional=True)
 
-    def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+    def forward(self, input_seq, input_lengths, hidden=None):
+        # type: (Tensor, Tensor, Optional[Tensor]) -> Tuple[Tensor, Tensor]
+        # Convert word indexes to embeddings
+        embedded = self.embedding(input_seq)
+        # Pack padded batch of sequences for RNN module
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first = True, enforce_sorted = False)
+        # Forward pass through GRU
+        outputs, hidden = self.gru(packed, hidden)
+        # Unpack padding
+        outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs, batch_first = True)
+        # Sum bidirectional GRU outputs
+        outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
+        hidden = hidden.sum(dim=0).unsqueeze(0)
+        # Return output and final hidden state
+        return outputs, hidden
 
-######################################################################
-# The Decoder
-# -----------
-#
-# The decoder is another RNN that takes the encoder output vector(s) and
-# outputs a sequence of words to create the translation.
-#
-
-
-######################################################################
-# Simple Decoder
-# ^^^^^^^^^^^^^^
-#
-# In the simplest seq2seq decoder we use only last output of the encoder.
-# This last output is sometimes called the *context vector* as it encodes
-# context from the entire sequence. This context vector is used as the
-# initial hidden state of the decoder.
-#
-# At every step of decoding, the decoder is given an input token and
-# hidden state. The initial input token is the start-of-string ``<SOS>``
-# token, and the first hidden state is the context vector (the encoder's
-# last hidden state).
-#
-# .. figure:: /_static/img/seq-seq-images/decoder-network.png
-#    :alt:
-#
-#
-
-class DecoderRNN(nn.Module):
-    def __init__(self, hidden_size, output_size):
-        super(DecoderRNN, self).__init__()
+# Luong attention layer
+class Attn(nn.Module):
+    def __init__(self, method, hidden_size):
+        super(Attn, self).__init__()
+        self.method = method
+        if self.method not in ['dot', 'general', 'concat']:
+            raise ValueError(self.method, "is not an appropriate attention method.")
         self.hidden_size = hidden_size
+        if self.method == 'general':
+            self.attn = nn.Linear(self.hidden_size, hidden_size)
+        elif self.method == 'concat':
+            self.attn = nn.Linear(self.hidden_size * 2, hidden_size)
+            self.v = nn.Parameter(torch.FloatTensor(hidden_size))
 
-        self.embedding = nn.Embedding(output_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
-        self.out = nn.Linear(hidden_size, output_size)
-        self.softmax = nn.LogSoftmax(dim=1)
+    def dot_score(self, hidden, encoder_output):
+        return torch.sum(hidden * encoder_output, dim=2)
 
-    def forward(self, input, hidden):
-        output = self.embedding(input).view(1, 1, -1)
-        output = F.relu(output)
-        output, hidden = self.gru(output, hidden)
-        output = self.softmax(self.out(output[0]))
-        return output, hidden
+    def general_score(self, hidden, encoder_output):
+        energy = self.attn(encoder_output)
+        return torch.sum(hidden * energy, dim=2)
 
-    def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+    def concat_score(self, hidden, encoder_output):
+        energy = self.attn(torch.cat((hidden.expand(encoder_output.size(0), -1, -1), encoder_output), 2)).tanh()
+        return torch.sum(self.v * energy, dim=2)
 
-######################################################################
-# I encourage you to train and observe the results of this model, but to
-# save space we'll be going straight for the gold and introducing the
-# Attention Mechanism.
+    def forward(self, hidden, encoder_outputs):
+        # Calculate the attention weights (energies) based on the given method
+        if self.method == 'general':
+            attn_energies = self.general_score(hidden, encoder_outputs)
+        elif self.method == 'concat':
+            attn_energies = self.concat_score(hidden, encoder_outputs)
+        elif self.method == 'dot':
+            attn_energies = self.dot_score(hidden, encoder_outputs)
+
+        # Transpose max_length and batch_size dimensions
+        attn_energies = attn_energies.t()
+
+        # Return the softmax normalized probability scores (with added dimension)
+        return F.softmax(attn_energies, dim=1).unsqueeze(1)
+
+# TorchScript Notes:
+# ~~~~~~~~~~~~~~~~~~~~~~
+#
+# Similarly to the ``EncoderRNN``, this module does not contain any
+# data-dependent control flow. Therefore, we can once again use
+# **tracing** to convert this model to TorchScript after it
+# is initialized and its parameters are loaded.
 #
 
+class LuongAttnDecoderRNN(nn.Module):
+    def __init__(self, attn_model, hidden_size, output_size, n_layers=1, dropout=0.1):
+        super(LuongAttnDecoderRNN, self).__init__()
 
-######################################################################
-# Attention Decoder
-# ^^^^^^^^^^^^^^^^^
-#
-# If only the context vector is passed between the encoder and decoder,
-# that single vector carries the burden of encoding the entire sentence.
-#
-# Attention allows the decoder network to "focus" on a different part of
-# the encoder's outputs for every step of the decoder's own outputs. First
-# we calculate a set of *attention weights*. These will be multiplied by
-# the encoder output vectors to create a weighted combination. The result
-# (called ``attn_applied`` in the code) should contain information about
-# that specific part of the input sequence, and thus help the decoder
-# choose the right output words.
-#
-# .. figure:: https://i.imgur.com/1152PYf.png
-#    :alt:
-#
-# Calculating the attention weights is done with another feed-forward
-# layer ``attn``, using the decoder's input and hidden state as inputs.
-# Because there are sentences of all sizes in the training data, to
-# actually create and train this layer we have to choose a maximum
-# sentence length (input length, for encoder outputs) that it can apply
-# to. Sentences of the maximum length will use all the attention weights,
-# while shorter sentences will only use the first few.
-#
-# .. figure:: /_static/img/seq-seq-images/attention-decoder-network.png
-#    :alt:
-#
-#
-
-MAX_LENGTH = 20
-
-class AttnDecoderRNN(nn.Module):
-    def __init__(self, hidden_size, output_size, dropout_p=0.1, max_length=MAX_LENGTH):
-        super(AttnDecoderRNN, self).__init__()
+        # Keep for reference
+        self.attn_model = attn_model
         self.hidden_size = hidden_size
         self.output_size = output_size
-        self.dropout_p = dropout_p
-        self.max_length = max_length
+        self.n_layers = n_layers
+        self.dropout = dropout
 
-        self.embedding = nn.Embedding(self.output_size, self.hidden_size)
-        self.attn = nn.Linear(self.hidden_size * 2, self.max_length)
-        self.attn_combine = nn.Linear(self.hidden_size * 2, self.hidden_size)
-        self.dropout = nn.Dropout(self.dropout_p)
-        self.gru = nn.GRU(self.hidden_size, self.hidden_size)
-        self.out = nn.Linear(self.hidden_size, self.output_size)
+        # Define layers
+        self.embedding = nn.Embedding(output_size, hidden_size)
+        self.embedding_dropout = nn.Dropout(dropout)
+        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout))
+        self.concat = nn.Linear(hidden_size * 2, hidden_size)
+        self.out = nn.Linear(hidden_size, output_size)
 
-    def forward(self, input, hidden, encoder_outputs):
-        embedded = self.embedding(input).view(1, 1, -1)
-        embedded = self.dropout(embedded)
+        self.attn = Attn(attn_model, hidden_size)
 
-        attn_weights = F.softmax(
-            self.attn(torch.cat((embedded[0], hidden[0]), 1)), dim=1)
-        attn_applied = torch.bmm(attn_weights.unsqueeze(0),
-                                 encoder_outputs.unsqueeze(0))
+    def forward(self, input_step, last_hidden, encoder_outputs):
+        # Note: we run this one step (word) at a time
+        # Get embedding of current input word
+        embedded = self.embedding(input_step)
+        embedded = self.embedding_dropout(embedded)
+        # Forward through unidirectional GRU
+        rnn_output, hidden = self.gru(embedded, last_hidden)
+        # Calculate attention weights from the current GRU output
+        attn_weights = self.attn(rnn_output, encoder_outputs)
+        # Multiply attention weights to encoder outputs to get new "weighted sum" context vector
+        context = attn_weights.bmm(encoder_outputs.transpose(0, 1))
+        # Concatenate weighted context vector and GRU output using Luong eq. 5
+        rnn_output = rnn_output.squeeze(0)
+        context = context.squeeze(1)
+        concat_input = torch.cat((rnn_output, context), 1)
+        concat_output = torch.tanh(self.concat(concat_input))
+        # Predict next word using Luong eq. 6
+        output = self.out(concat_output)
+        output = F.softmax(output, dim=1)
+        # Return output and final hidden state
+        return output, hidden
 
-        output = torch.cat((embedded[0], attn_applied[0]), 1)
-        output = self.attn_combine(output).unsqueeze(0)
+class GreedySearchDecoder(nn.Module):
+    def __init__(self, encoder, decoder, device, SOS_token, decoder_n_layers):
+        super(GreedySearchDecoder, self).__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self.device = device
+        self.SOS_token = SOS_token
+        self.decoder_n_layers = decoder_n_layers
 
-        output = F.relu(output)
-        output, hidden = self.gru(output, hidden)
-
-        output = F.log_softmax(self.out(output[0]), dim=1)
-        return output, hidden, attn_weights
-
-    def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
-
-######################################################################
-# Training the Model
-# ------------------
-#
-# To train we run the input sentence through the encoder, and keep track
-# of every output and the latest hidden state. Then the decoder is given
-# the ``<SOS>`` token as its first input, and the last hidden state of the
-# encoder as its first hidden state.
-#
-# "Teacher forcing" is the concept of using the real target outputs as
-# each next input, instead of using the decoder's guess as the next input.
-# Using teacher forcing causes it to converge faster but `when the trained
-# network is exploited, it may exhibit
-# instability <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.378.4095&rep=rep1&type=pdf>`__.
-#
-# You can observe outputs of teacher-forced networks that read with
-# coherent grammar but wander far from the correct translation -
-# intuitively it has learned to represent the output grammar and can "pick
-# up" the meaning once the teacher tells it the first few words, but it
-# has not properly learned how to create the sentence from the translation
-# in the first place.
-#
-# Because of the freedom PyTorch's autograd gives us, we can randomly
-# choose to use teacher forcing or not with a simple if statement. Turn
-# ``teacher_forcing_ratio`` up to use more of it.
-#
+    def forward(self, input_seq : torch.Tensor, input_length : torch.Tensor, max_length : int):
+        # Forward input through encoder model
+        encoder_outputs, encoder_hidden = self.encoder(input_seq, input_length)
+        # Prepare encoder's final hidden layer to be first hidden input to the decoder
+        decoder_hidden = encoder_hidden[:self._decoder_n_layers]
+        # Initialize decoder input with SOS_token
+        decoder_input = torch.ones(1, 1, device=self._device, dtype=torch.long) * self._SOS_token
+        # Initialize tensors to append decoded words to
+        all_tokens = torch.zeros([0], device=self._device, dtype=torch.long)
+        all_scores = torch.zeros([0], device=self._device)
+        # Iteratively decode one word token at a time
+        for _ in range(max_length):
+            # Forward pass through decoder
+            decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
+            # Obtain most likely word token and its softmax score
+            decoder_scores, decoder_input = torch.max(decoder_output, dim=1)
+            # Record token and score
+            all_tokens = torch.cat((all_tokens, decoder_input), dim=0)
+            all_scores = torch.cat((all_scores, decoder_scores), dim=0)
+            # Prepare current token to be next decoder input (add a dimension)
+            decoder_input = torch.unsqueeze(decoder_input, 0)
+        # Return collections of word tokens and scores
+        return all_tokens, all_scores
 
 teacher_forcing_ratio = 0.5
 
-
-def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
-    encoder_hidden = encoder.initHidden()
+def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion):
 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    input_tensor = sample['In_idxs'].squeeze(0).to(device)
-    target_tensor = sample['Out_idxs'].squeeze(0).to(device)
-    input_length = sample['In_lengths'].squeeze(0)
-    target_length = sample['Out_lengths'].squeeze(0)
-
-    encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+    input_tensor = sample['In_idxs'].to(device)
+    target_tensor = sample['Out_idxs'].to(device)
+    input_length = sample['In_lengths'].to(device)
+    target_length = sample['Out_lengths'].to(device)
 
     loss = 0
-    for ei in range(input_length):
-        encoder_output, encoder_hidden = encoder(
-            input_tensor[ei], encoder_hidden)
-        encoder_outputs[ei] = encoder_output[0, 0]
-
-    decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+    encoder_outputs, encoder_hidden = encoder(
+        input_tensor, input_length)
 
     decoder_hidden = encoder_hidden
 
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
     if use_teacher_forcing:
-        # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            loss += criterion(decoder_output, target_tensor[di].unsqueeze(0))
-            decoder_input = target_tensor[di]  # Teacher forcing
+        for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
+            decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+            dh = decoder_hidden[:,j,:].unsqueeze(1)
+            eo = encoder_outputs[j].unsqueeze(1)
+            # Teacher forcing: Feed the target as the next input
+            for di in range(tl):
+                decoder_output, dh = decoder(
+                    decoder_input, dh, eo)
+                #print(decoder_output.shape, t[di].unsqueeze(0).shape)
+                loss += criterion(decoder_output, t[di].unsqueeze(0))
+                decoder_input = t[di].unsqueeze(0).unsqueeze(0)  # Teacher forcing
 
     else:
         # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach()  # detach from history as input
-
-            loss += criterion(decoder_output, target_tensor[di].unsqueeze(0))
-            if decoder_input.item() == dataset.EOS_token:
-                break
-
+        for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
+            decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+            dh = decoder_hidden[:,j,:].unsqueeze(1)
+            eo = encoder_outputs[j].unsqueeze(1)
+            for di in range(tl):
+                decoder_output, dh = decoder(
+                    decoder_input, dh, eo)
+                #print(decoder_output.shape, t[di].unsqueeze(0).shape)
+                loss += criterion(decoder_output, t[di].unsqueeze(0))
+                topv, topi = decoder_output.topk(1)
+                decoder_input = topi.squeeze().detach()  # detach from history as input
+                if decoder_input.item() == dataset.EOS_token:
+                    break
+                decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
     loss.backward()
 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_length
+    return loss.item() / target_length.sum(0)
 
 
 ######################################################################
@@ -467,7 +402,7 @@ plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
 
-def evaluate(encoder, decoder, dataloader, max_length=MAX_LENGTH):
+def evaluate(encoder, decoder, dataloader):
     with torch.no_grad():
         for sample in iter(dataloader):
             input_tensor = sample['In_idxs'].squeeze(0).to(device)
@@ -502,7 +437,7 @@ def evaluate(encoder, decoder, dataloader, max_length=MAX_LENGTH):
                 decoder_input = topi.squeeze().detach()
 
             #return decoded_plate, decoder_attentions[:di + 1]
-            print(sample['In_plate'],decoded_plate, sample['Out_plate'])
+            print(sample['In_plate'],''.join(decoded_plate[:-1]),sample['Out_plate'])
 ######################################################################
 # Training and Evaluating
 # =======================
@@ -522,11 +457,11 @@ def evaluate(encoder, decoder, dataloader, max_length=MAX_LENGTH):
 #    encoder and decoder are initialized and run ``trainIters`` again.
 #
 
-#dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
-dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
+dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
+#dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
 print(dataset[0])
 seed = 1234
-bs = 1
+bs = 4
 num_workers = 2
 epochs = 25
 
@@ -547,14 +482,14 @@ if not Path(model_folder).is_dir():
 
 hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
-attn_decoder1 = AttnDecoderRNN(hidden_size, len(dataset.idx_to_char), dropout_p=0.1).to(device)
+attn_model = 'dot'
+attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char)).to(device)
 
 trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 '''
-
 encoder1 = torch.load(os.path.join(model_folder,'weights_encoder.pt'), map_location = device)
 attn_decoder1 = torch.load(os.path.join(model_folder,'weights_decoder.pt'), map_location = device)
 evaluate(encoder1, attn_decoder1, val_dataloader)
