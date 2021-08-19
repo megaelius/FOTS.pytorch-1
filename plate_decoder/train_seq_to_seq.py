@@ -478,7 +478,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 hidden_size = 512
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
 attn_model = 'dot'
-attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, n_layers = 2, len(dataset.idx_to_char)).to(device)
+attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
 
 trainIters(encoder1, attn_decoder1, train_dataloader, device = device, print_every=250)
 
