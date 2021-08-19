@@ -112,7 +112,7 @@ class PlateCorrectionDataset(Dataset):
         return sample
 
 class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, n_layers=1, dropout=0):
+    def __init__(self, input_size, hidden_size, n_layers=1, dropout=0.2):
         super(EncoderRNN, self).__init__()
         self.n_layers = n_layers
         self.hidden_size = hidden_size
@@ -189,7 +189,7 @@ class Attn(nn.Module):
 #
 
 class LuongAttnDecoderRNN(nn.Module):
-    def __init__(self, attn_model, hidden_size, output_size, n_layers=1, dropout=0.1):
+    def __init__(self, attn_model, hidden_size, output_size, n_layers=1, dropout=0.2):
         super(LuongAttnDecoderRNN, self).__init__()
 
         # Keep for reference
@@ -475,10 +475,10 @@ if not Path(model_folder).is_dir():
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hidden_size = 256
-encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
+hidden_size = 512
+encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
 attn_model = 'dot'
-attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char)).to(device)
+attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, n_layers = 2, len(dataset.idx_to_char)).to(device)
 
 trainIters(encoder1, attn_decoder1, train_dataloader, device = device, print_every=250)
 
