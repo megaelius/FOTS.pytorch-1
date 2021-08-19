@@ -57,7 +57,7 @@ class PlateCorrectionDataset(Dataset):
     def __init__(self, data_pkl, data_alphabet):
         #random.seed(1234)
         with open(data_pkl, 'rb') as f:
-            self.plates = list(pickle.load(f))#[:1000]
+            self.plates = list(pickle.load(f))[50000]
         print(f'MAX LENGTH: {max([len(p) for p in self.plates])}')
         self.alphabet = set()
         with open(data_alphabet, 'rb') as f:
@@ -112,34 +112,6 @@ class PlateCorrectionDataset(Dataset):
         sample = {"In_plate": in_plate, "In_idxs": in_idxs,
                   "Out_plate": out_plate, "Out_idxs": out_idxs}
         return sample
-
-#dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
-dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
-print(dataset[0])
-seed = 1234
-bs = 1
-num_workers = 2
-epochs = 25
-
-n=len(dataset)
-n_train = int(n*0.7)
-n_val = n-n_train
-
-train_sample, val_sample = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(seed))
-train_sampler = RandomSampler(train_sample)
-val_sampler = RandomSampler(val_sample)
-train_dataloader = DataLoader(train_sample, sampler = train_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
-val_dataloader = DataLoader(val_sample, sampler = val_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
-
-MAX_LENGTH = 17
-
-model_folder = '../../out/Model_seq-to-seq'
-if not Path(model_folder).is_dir():
-    Path(model_folder).mkdir()
-
-#input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
-#print(random.choice(pairs))
-
 
 ######################################################################
 # The Seq2Seq Model
@@ -293,6 +265,8 @@ class DecoderRNN(nn.Module):
 #    :alt:
 #
 #
+
+MAX_LENGTH = 20
 
 class AttnDecoderRNN(nn.Module):
     def __init__(self, hidden_size, output_size, dropout_p=0.1, max_length=MAX_LENGTH):
@@ -493,41 +467,42 @@ plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
 
-def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
+def evaluate(encoder, decoder, dataloader, max_length=MAX_LENGTH):
     with torch.no_grad():
-        input_tensor = tensorFromSentence(input_lang, sentence)
-        input_length = input_tensor.size()[0]
-        encoder_hidden = encoder.initHidden()
+        for sample in iter(dataloader):
+            input_tensor = sample['In_idxs'].squeeze(0).to(device)
+            input_length = sample['In_lengths'].squeeze(0)
+            encoder_hidden = encoder.initHidden()
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+            encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
-        for ei in range(input_length):
-            encoder_output, encoder_hidden = encoder(input_tensor[ei],
-                                                     encoder_hidden)
-            encoder_outputs[ei] += encoder_output[0, 0]
+            for ei in range(input_length):
+                encoder_output, encoder_hidden = encoder(input_tensor[ei],
+                                                         encoder_hidden)
+                encoder_outputs[ei] += encoder_output[0, 0]
 
-        decoder_input = torch.tensor([[SOS_token]], device=device)  # SOS
+            decoder_input = torch.tensor([[dataset.SOS_token]], device=device)  # SOS
 
-        decoder_hidden = encoder_hidden
+            decoder_hidden = encoder_hidden
 
-        decoded_words = []
-        decoder_attentions = torch.zeros(max_length, max_length)
+            decoded_plate = []
+            decoder_attentions = torch.zeros(max_length, max_length)
 
-        for di in range(max_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            decoder_attentions[di] = decoder_attention.data
-            topv, topi = decoder_output.data.topk(1)
-            if topi.item() == EOS_token:
-                decoded_words.append('<EOS>')
-                break
-            else:
-                decoded_words.append(output_lang.index2word[topi.item()])
+            for di in range(max_length):
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_outputs)
+                decoder_attentions[di] = decoder_attention.data
+                topv, topi = decoder_output.data.topk(1)
+                if topi.item() == dataset.EOS_token:
+                    decoded_plate.append('<EOS>')
+                    break
+                else:
+                    decoded_plate.append(dataset.idx_to_char[topi.item()])
 
-            decoder_input = topi.squeeze().detach()
+                decoder_input = topi.squeeze().detach()
 
-        return decoded_words, decoder_attentions[:di + 1]
-
+            #return decoded_plate, decoder_attentions[:di + 1]
+            print(sample['In_plate'],decoded_plate, sample['Out_plate'])
 ######################################################################
 # Training and Evaluating
 # =======================
@@ -547,6 +522,29 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
 #    encoder and decoder are initialized and run ``trainIters`` again.
 #
 
+dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
+#dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
+print(dataset[0])
+seed = 1234
+bs = 1
+num_workers = 2
+epochs = 25
+
+n=len(dataset)
+n_train = int(n*0.7)
+n_val = n-n_train
+
+train_sample, val_sample = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(seed))
+train_sampler = RandomSampler(train_sample)
+val_sampler = RandomSampler(val_sample)
+train_dataloader = DataLoader(train_sample, sampler = train_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
+val_dataloader = DataLoader(val_sample, sampler = val_sampler, batch_size=bs, num_workers = num_workers, collate_fn = collate_fn_padd)
+
+model_folder = '../../out/Model_seq-to-seq'
+if not Path(model_folder).is_dir():
+    Path(model_folder).mkdir()
+
+
 hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
 attn_decoder1 = AttnDecoderRNN(hidden_size, len(dataset.idx_to_char), dropout_p=0.1).to(device)
@@ -555,25 +553,9 @@ trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
-######################################################################
-# Exercises
-# =========
-#
-# -  Try with a different dataset
-#
-#    -  Another language pair
-#    -  Human → Machine (e.g. IOT commands)
-#    -  Chat → Response
-#    -  Question → Answer
-#
-# -  Replace the embeddings with pre-trained word embeddings such as word2vec or
-#    GloVe
-# -  Try with more layers, more hidden units, and more sentences. Compare
-#    the training time and results.
-# -  If you use a translation file where pairs have two of the same phrase
-#    (``I am test \t I am test``), you can use this as an autoencoder. Try
-#    this:
-#
-#    -  Train as an autoencoder
-#    -  Save only the Encoder network
-#    -  Train a new Decoder for translation from there
+'''
+
+encoder1 = torch.load(os.path.join(model_folder,'weights_encoder.pt'), map_location = device)
+attn_decoder1 = torch.load(os.path.join(model_folder,'weights_decoder.pt'), map_location = device)
+evaluate(encoder1, attn_decoder1, val_dataloader)
+'''
