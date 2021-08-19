@@ -267,7 +267,7 @@ class GreedySearchDecoder(nn.Module):
 
 teacher_forcing_ratio = 0.5
 
-def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion):
+def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, device):
 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
@@ -366,7 +366,7 @@ def showPlot(points):
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,'loss.png'))
 
-def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01, device=device):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -376,10 +376,11 @@ def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, l
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
     n_iters = len(dataloader)
+    encoder.to(device)
+    decoder.to(device)
     for i,sample in enumerate(tqdm.tqdm(iter(dataloader))):
-
         loss = train(sample, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion)
+                     decoder, encoder_optimizer, decoder_optimizer, criterion, device)
         print_loss_total += loss
         plot_loss_total += loss
 
@@ -485,7 +486,7 @@ encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char)).to(device)
 
-trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250)
+trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250, device = device)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
