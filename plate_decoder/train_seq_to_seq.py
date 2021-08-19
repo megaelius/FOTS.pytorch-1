@@ -207,6 +207,7 @@ class LuongAttnDecoderRNN(nn.Module):
         self.out = nn.Linear(hidden_size, output_size)
 
         self.attn = Attn(attn_model, hidden_size)
+        self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input_step, last_hidden, encoder_outputs):
         # Note: we run this one step (word) at a time
@@ -226,7 +227,7 @@ class LuongAttnDecoderRNN(nn.Module):
         concat_output = torch.tanh(self.concat(concat_input))
         # Predict next word using Luong eq. 6
         output = self.out(concat_output)
-        output = F.softmax(output, dim=1)
+        output = self.logsoftmax(output)
         # Return output and final hidden state
         return output, hidden
 
