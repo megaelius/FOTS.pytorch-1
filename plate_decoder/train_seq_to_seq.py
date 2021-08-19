@@ -370,8 +370,8 @@ def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, l
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate).to(device)
+    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate).to(device)
     criterion = nn.NLLLoss()
     n_iters = len(dataloader)
     encoder.to(device)
