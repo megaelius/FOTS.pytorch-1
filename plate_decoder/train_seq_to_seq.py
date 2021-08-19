@@ -22,8 +22,6 @@ from torch import optim
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def collate_fn_padd(batch):
     '''
     Padds batch of variable length
@@ -480,6 +478,7 @@ model_folder = '../../out/Model_seq-to-seq'
 if not Path(model_folder).is_dir():
     Path(model_folder).mkdir()
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
