@@ -272,8 +272,8 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
 
     input_tensor = sample['In_idxs'].to(device)
     target_tensor = sample['Out_idxs'].to(device)
-    input_length = sample['In_lengths'].to(device)
-    target_length = sample['Out_lengths'].to(device)
+    input_length = sample['In_lengths']
+    target_length = sample['Out_lengths']
 
     loss = 0
     encoder_outputs, encoder_hidden = encoder(
