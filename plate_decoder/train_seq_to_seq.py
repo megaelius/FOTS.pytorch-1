@@ -64,6 +64,9 @@ class PlateCorrectionDataset(Dataset):
             for line in f:
                 for char in str(line).replace('\n',''):
                     self.alphabet.add(char)
+        for plate in self.plates:
+            for char in plate:
+                self.alphabet.add(char)
         self.PAD_token = 0
         self.SOS_token = 1
         self.EOS_token = 2
@@ -75,6 +78,7 @@ class PlateCorrectionDataset(Dataset):
             self.idx_to_char.append(c)
         print(self.char_to_idx)
         print(self.idx_to_char)
+        print(len(self.idx_to_char))
 
     def random_transform_plate(self,plate):
         char_list = list(plate)
