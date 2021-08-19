@@ -65,10 +65,10 @@ class PlateCorrectionDataset(Dataset):
                 for char in str(line).replace('\n',''):
                     self.alphabet.add(char)
         for plate in self.plates:
-            plate.replace('\t','')
+            plate = plate.replace('\t','')
             for char in plate:
-                pass
-                #self.alphabet.add(char)
+                #pass
+                self.alphabet.add(char)
         self.PAD_token = 0
         self.SOS_token = 1
         self.EOS_token = 2
