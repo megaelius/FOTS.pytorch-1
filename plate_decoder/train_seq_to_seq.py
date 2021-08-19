@@ -65,6 +65,7 @@ class PlateCorrectionDataset(Dataset):
                 for char in str(line).replace('\n',''):
                     self.alphabet.add(char)
         for plate in self.plates:
+            plate.replace('\t','')
             for char in plate:
                 self.alphabet.add(char)
         self.PAD_token = 0
