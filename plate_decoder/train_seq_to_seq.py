@@ -134,7 +134,7 @@ class EncoderRNN(nn.Module):
         # Unpack padding
         outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs, batch_first = True)
         # Sum bidirectional GRU outputs
-        outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
+        #outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
         #hidden = hidden.sum(dim=0).unsqueeze(0)
         # Return output and final hidden state
         return outputs, hidden
@@ -202,8 +202,8 @@ class LuongAttnDecoderRNN(nn.Module):
         # Define layers
         self.embedding = nn.Embedding(output_size, hidden_size)
         self.embedding_dropout = nn.Dropout(dropout)
-        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout))
-        self.concat = nn.Linear(hidden_size * 2, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout), bidirectional = True)
+        self.concat = nn.Linear(hidden_size * 4, hidden_size)
         self.out = nn.Linear(hidden_size, output_size)
 
         self.attn = Attn(attn_model, hidden_size)
