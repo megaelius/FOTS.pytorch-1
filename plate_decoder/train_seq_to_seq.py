@@ -364,7 +364,7 @@ def showPlot(points):
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,'loss.png'))
 
-def trainIters(encoder, decoder, dataloader, print_every=1000, plot_every=100, learning_rate=0.01, device=device):
+def trainIters(encoder, decoder, dataloader, device, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -485,7 +485,7 @@ encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size).to(device)
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char)).to(device)
 
-trainIters(encoder1, attn_decoder1, train_dataloader, print_every=250, device = device)
+trainIters(encoder1, attn_decoder1, train_dataloader, device = device, print_every=250)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
