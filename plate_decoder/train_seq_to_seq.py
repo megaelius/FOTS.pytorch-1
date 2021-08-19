@@ -55,7 +55,7 @@ class PlateCorrectionDataset(Dataset):
     def __init__(self, data_pkl, data_alphabet):
         #random.seed(1234)
         with open(data_pkl, 'rb') as f:
-            self.plates = list(pickle.load(f))[:50000]
+            self.plates = list(pickle.load(f))#[:50000]
         print(f'MAX LENGTH: {max([len(p) for p in self.plates])}')
         self.alphabet = set()
         with open(data_alphabet, 'rb') as f:
@@ -406,37 +406,32 @@ def evaluate(encoder, decoder, dataloader):
         for sample in iter(dataloader):
             input_tensor = sample['In_idxs'].squeeze(0).to(device)
             input_length = sample['In_lengths'].squeeze(0)
-            encoder_hidden = encoder.initHidden()
 
-            encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
-
-            for ei in range(input_length):
-                encoder_output, encoder_hidden = encoder(input_tensor[ei],
-                                                         encoder_hidden)
-                encoder_outputs[ei] += encoder_output[0, 0]
-
-            decoder_input = torch.tensor([[dataset.SOS_token]], device=device)  # SOS
+            encoder_outputs, encoder_hidden = encoder(
+                input_tensor, input_length)
 
             decoder_hidden = encoder_hidden
 
-            decoded_plate = []
-            decoder_attentions = torch.zeros(max_length, max_length)
+            for j,tl in enumerate(input_length):
+                decoded_plate = []
+                decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+                dh = decoder_hidden[:,j,:].unsqueeze(1)
+                eo = encoder_outputs[j].unsqueeze(1)
+                # Teacher forcing: Feed the target as the next input
+                for di in range(tl):
+                    decoder_output, dh = decoder(
+                        decoder_input, dh, eo)
+                    topv, topi = decoder_output.data.topk(1)
+                    if topi.item() == dataset.EOS_token:
+                        decoded_plate.append('<EOS>')
+                        break
+                    else:
+                        decoded_plate.append(dataset.idx_to_char[topi.item()])
 
-            for di in range(max_length):
-                decoder_output, decoder_hidden, decoder_attention = decoder(
-                    decoder_input, decoder_hidden, encoder_outputs)
-                decoder_attentions[di] = decoder_attention.data
-                topv, topi = decoder_output.data.topk(1)
-                if topi.item() == dataset.EOS_token:
-                    decoded_plate.append('<EOS>')
-                    break
-                else:
-                    decoded_plate.append(dataset.idx_to_char[topi.item()])
+                    decoder_input = topi.squeeze().detach().unsqueeze(0).unsqueeze(0)  # Teacher forcing
 
-                decoder_input = topi.squeeze().detach()
-
-            #return decoded_plate, decoder_attentions[:di + 1]
-            print(sample['In_plate'],''.join(decoded_plate[:-1]),sample['Out_plate'])
+                #return decoded_plate, decoder_attentions[:di + 1]
+                print(sample['In_plate'][j],''.join(decoded_plate[:-1]),sample['Out_plate'][j])
 ######################################################################
 # Training and Evaluating
 # =======================
