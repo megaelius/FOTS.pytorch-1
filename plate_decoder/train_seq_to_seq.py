@@ -135,7 +135,7 @@ class EncoderRNN(nn.Module):
         outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs, batch_first = True)
         # Sum bidirectional GRU outputs
         outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
-        hidden = hidden.sum(dim=0).unsqueeze(0)
+        #hidden = hidden.sum(dim=0).unsqueeze(0)
         # Return output and final hidden state
         return outputs, hidden
 
