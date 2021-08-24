@@ -213,7 +213,7 @@ class LuongAttnDecoderRNN(nn.Module):
         # Note: we run this one step (word) at a time
         # Get embedding of current input word
         embedded = self.embedding(input_step)
-        embedded = self.embedding_dropout(embedded)
+        embedded = self.embedding_dropout(embedded).contiguous()
         # Forward through unidirectional GRU
         print(embedded.shape,last_hidden.shape)
         rnn_output, hidden = self.gru(embedded, last_hidden)
