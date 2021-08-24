@@ -137,7 +137,7 @@ class EncoderRNN(nn.Module):
         #outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
         #hidden = hidden.sum(dim=0).unsqueeze(0)
         # Return output and final hidden state
-        return outputs.contiguous(), hidden
+        return outputs.contiguous(), hidden.contiguous()
 
 # Luong attention layer
 class Attn(nn.Module):
