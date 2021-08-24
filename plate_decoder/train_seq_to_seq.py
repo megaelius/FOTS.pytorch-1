@@ -399,6 +399,7 @@ def showPlot(points,filename):
 def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     train_losses = []
+    val_losses = []
     train_print_loss_total = 0  # Reset every print_every
     train_plot_loss_total = 0  # Reset every plot_every
     val_losses = []
@@ -431,7 +432,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                 train_losses.append(train_plot_loss_avg)
                 train_plot_loss_total = 0
 
-        showPlot(train_plot_losses,'train_loss.png')
+        showPlot(train_losses,'train_loss.png')
         '''
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
             loss = evaluate(sample, encoder,
@@ -450,7 +451,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                 val_losses.append(val_plot_loss_avg)
                 val_plot_loss_total = 0
 
-        showPlot(val_plot_losses,'val_loss.png')
+        showPlot(val_losses,'val_loss.png')
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
