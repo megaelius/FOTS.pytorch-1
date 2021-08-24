@@ -431,7 +431,9 @@ def showPlot(points,filename):
 def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, idx_to_char, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     train_losses = []
+    train_distances = []
     val_losses = []
+    val_distances = []
     train_print_loss_total = 0  # Reset every print_every
     train_plot_loss_total = 0  # Reset every plot_every
     val_losses = []
@@ -456,15 +458,17 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
             if (i+1)% print_every == 0:
                 train_print_loss_avg = train_print_loss_total / print_every
                 train_print_loss_total = 0
-                print('%s (%d %d%%) %.4f' % (timeSince(start, i / train_iters),
-                                             i, i / train_iters * 100,train_print_loss_avg))
+                print('%s (%d %d%%) %.4f %.4f' % (timeSince(start, i / train_iters),
+                                             i, i / train_iters * 100,train_print_loss_avg, dist/(i*train_iters)))
 
             if (i+1) % plot_every == 0:
                 train_plot_loss_avg = train_plot_loss_total / plot_every
                 train_losses.append(train_plot_loss_avg)
+                train_distances.append(dist)
                 train_plot_loss_total = 0
 
         showPlot(train_losses,'train_loss.png')
+        showPlot(train_distances,'train_distance.png')
         '''
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
             loss, dist = evaluate(sample, encoder,
@@ -481,16 +485,18 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
             if (i+1) % plot_every == 0:
                 val_plot_loss_avg = val_plot_loss_total / plot_every
                 val_losses.append(val_plot_loss_avg)
+                val_distances.append(dist)
                 val_plot_loss_total = 0
 
         showPlot(val_losses,'val_loss.png')
+        showPlot(val_distances,'train_distance.png')
         '''
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
 
-def evaluateIters(encoder, decoder, dataloader):
+def demo(encoder, decoder, dataloader):
     with torch.no_grad():
         for sample in iter(dataloader):
             input_tensor = sample['In_idxs'].squeeze(0).to(device)
