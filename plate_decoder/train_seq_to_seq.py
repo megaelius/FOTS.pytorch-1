@@ -320,6 +320,35 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
 
     return loss.item()
 
+def evaluate(sample, encoder, decoder, criterion, device):
+
+    input_tensor = sample['In_idxs'].to(device)
+    target_tensor = sample['Out_idxs'].to(device)
+    input_length = sample['In_lengths']
+    target_length = sample['Out_lengths']
+
+    loss = 0
+    encoder_outputs, encoder_hidden = encoder(
+        input_tensor, input_length)
+
+    decoder_hidden = encoder_hidden
+
+    # Without teacher forcing: use its own predictions as the next input
+    for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
+        decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+        dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
+        eo = encoder_outputs[j].unsqueeze(1).contiguous()
+        for di in range(tl):
+            decoder_output, dh = decoder(
+                decoder_input, dh, eo)
+            #print(decoder_output.shape, t[di].unsqueeze(0).shape)
+            loss += criterion(decoder_output, t[di].unsqueeze(0))
+            topv, topi = decoder_output.topk(1)
+            decoder_input = topi.squeeze().detach()  # detach from history as input
+            if decoder_input.item() == dataset.EOS_token:
+                break
+            decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
+    return loss.item()
 
 ######################################################################
 # This is a helper function to print time elapsed and estimated time
@@ -356,52 +385,76 @@ def timeSince(since, percent):
 # of examples, time so far, estimated time) and average loss.
 #
 
-def showPlot(points):
+def showPlot(points,filename):
     plt.figure()
     fig, ax = plt.subplots()
     # this locator puts ticks at regular intervals
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
-    plt.savefig(os.path.join(model_folder,'loss.png'))
+    plt.savefig(os.path.join(model_folder,filename))
 
-def trainIters(encoder, decoder, dataloader, device, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
-    plot_losses = []
-    print_loss_total = 0  # Reset every print_every
-    plot_loss_total = 0  # Reset every plot_every
+    train_losses = []
+    train_print_loss_total = 0  # Reset every print_every
+    train_plot_loss_total = 0  # Reset every plot_every
+    val_losses = []
+    val_print_loss_total = 0  # Reset every print_every
+    val_plot_loss_total = 0  # Reset every plot_every
 
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
-    n_iters = len(dataloader)
+    n_iters = epochs*len(dataloader)
     encoder.to(device)
     decoder.to(device)
-    for i,sample in enumerate(tqdm.tqdm(iter(dataloader))):
-        loss = train(sample, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion, device)
-        print_loss_total += loss
-        plot_loss_total += loss
+    for epoch in range(epochs):
+        '''
+        for i,sample in enumerate(tqdm.tqdm(iter(train_dataloader))):
+            loss = train(sample, encoder,
+                         decoder, encoder_optimizer, decoder_optimizer, criterion, device)
+            train_print_loss_total += loss
+            train_plot_loss_total += loss
 
-        if (i+1)% print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, i / n_iters),
-                                         i, i / n_iters * 100, print_loss_avg))
+            if (i+1)% print_every == 0:
+                train_print_loss_avg = train_print_loss_total / print_every
+                train_print_loss_total = 0
+                print('%s (%d %d%%) %.4f' % (timeSince(start, i / n_iters),
+                                             i, i / n_iters * 100,train_print_loss_avg))
 
-        if (i+1) % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+            if (i+1) % plot_every == 0:
+                train_plot_loss_avg = train_plot_loss_total / plot_every
+                train_losses.append(train_plot_loss_avg)
+                train_plot_loss_total = 0
 
-    showPlot(plot_losses)
+        showPlot(train_plot_losses,'train_loss.png')
+        '''
+        for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
+            loss = evaluate(sample, encoder,
+                         decoder, criterion, device)
+            val_print_loss_total += loss
+            val_plot_loss_total += loss
+
+            if (i+1)% print_every == 0:
+                val_print_loss_avg = val_print_loss_total / print_every
+                val_print_loss_total = 0
+                print('%s (%d %d%%) %.4f' % (timeSince(start, i / n_iters),
+                                             i, i / n_iters * 100,val_print_loss_avg))
+
+            if (i+1) % plot_every == 0:
+                val_plot_loss_avg = val_plot_loss_total / plot_every
+                val_losses.append(val_plot_loss_avg)
+                val_plot_loss_total = 0
+
+        showPlot(val_plot_losses,'val_loss.png')
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
 
-def evaluate(encoder, decoder, dataloader):
+def evaluateIters(encoder, decoder, dataloader):
     with torch.no_grad():
         for sample in iter(dataloader):
             input_tensor = sample['In_idxs'].squeeze(0).to(device)
