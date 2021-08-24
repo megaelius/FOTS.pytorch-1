@@ -436,9 +436,12 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
     val_distances = []
     train_print_loss_total = 0  # Reset every print_every
     train_plot_loss_total = 0  # Reset every plot_every
-    val_losses = []
     val_print_loss_total = 0  # Reset every print_every
     val_plot_loss_total = 0  # Reset every plot_every
+    train_print_dist_total = 0  # Reset every print_every
+    train_plot_dist_total = 0  # Reset every plot_every
+    val_print_dist_total = 0  # Reset every print_every
+    val_plot_dist_total = 0  # Reset every plot_every
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
@@ -454,43 +457,55 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                          decoder, encoder_optimizer, decoder_optimizer, criterion, device, idx_to_char)
             train_print_loss_total += loss
             train_plot_loss_total += loss
+            train_print_dist_total += dist
+            train_plot_dist_total += dist
 
             if (i+1)% print_every == 0:
                 train_print_loss_avg = train_print_loss_total / print_every
                 train_print_loss_total = 0
+                train_print_dist_avg = train_print_dist_total / print_every
+                train_print_dist_total = 0
                 print('%s (%d %d%%) %.4f %.4f' % (timeSince(start, i / train_iters),
-                                             i, i / train_iters * 100,train_print_loss_avg, dist/(i*train_iters)))
+                                             i, i / train_iters * 100,train_print_loss_avg, train_print_dist_avg))
 
             if (i+1) % plot_every == 0:
                 train_plot_loss_avg = train_plot_loss_total / plot_every
+                train_plot_dist_avg = train_plot_dist_total / plot_every
                 train_losses.append(train_plot_loss_avg)
-                train_distances.append(dist)
+                train_distances.append(train_plot_dist_avg)
                 train_plot_loss_total = 0
+                train_plot_dist_total = 0
 
         showPlot(train_losses,'train_loss.png')
         showPlot(train_distances,'train_distance.png')
-        '''
+
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
             loss, dist = evaluate(sample, encoder,
                          decoder, criterion, device, idx_to_char)
             val_print_loss_total += loss
             val_plot_loss_total += loss
+            val_print_dist_total += dist
+            val_plot_dist_total += dist
 
             if (i+1)% print_every == 0:
                 val_print_loss_avg = val_print_loss_total / print_every
                 val_print_loss_total = 0
-                print('%s (%d %d%%) %.4f' % (timeSince(start, i / val_iters),
-                                             i, i / val_iters * 100,val_print_loss_avg))
+                val_print_dist_avg = val_print_dist_total / print_every
+                val_print_dist_total = 0
+                print('%s (%d %d%%) %.4f %.4f' % (timeSince(start, i / val_iters),
+                                             i, i / val_iters * 100,val_print_loss_avg, val_print_dist_avg))
 
             if (i+1) % plot_every == 0:
                 val_plot_loss_avg = val_plot_loss_total / plot_every
+                val_plot_dist_avg = val_plot_dist_total / plot_every
                 val_losses.append(val_plot_loss_avg)
-                val_distances.append(dist)
+                val_distances.append(val_plot_dist_avg)
                 val_plot_loss_total = 0
+                val_plot_dist_total = 0
 
         showPlot(val_losses,'val_loss.png')
-        showPlot(val_distances,'train_distance.png')
-        '''
+        showPlot(val_distances,'val_distance.png')
+
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
