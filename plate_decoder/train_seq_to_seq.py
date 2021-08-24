@@ -55,7 +55,7 @@ class PlateCorrectionDataset(Dataset):
     def __init__(self, data_pkl, data_alphabet):
         #random.seed(1234)
         with open(data_pkl, 'rb') as f:
-            self.plates = list(pickle.load(f))#[:50000]
+            self.plates = list(pickle.load(f))[:50000]
         print(f'MAX LENGTH: {max([len(p) for p in self.plates])}')
         self.alphabet = set()
         with open(data_alphabet, 'rb') as f:
