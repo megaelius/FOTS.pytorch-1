@@ -544,7 +544,7 @@ def evaluateIters(encoder, decoder, dataloader):
 dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
 print(dataset[0])
 seed = 1234
-bs = 1024
+bs = 64
 num_workers = 2
 epochs = 25
 
