@@ -266,7 +266,27 @@ class GreedySearchDecoder(nn.Module):
 
 teacher_forcing_ratio = 0.5
 
-def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, device):
+def levenshtein(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein(s2, s1)
+
+    # len(s1) >= len(s2)
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1 # j+1 instead of j since previous_row and current_row are one character longer
+            deletions = current_row[j] + 1       # than s2
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, device, idx_to_char):
     encoder.train()
     decoder.train()
     encoder_optimizer.zero_grad()
@@ -277,6 +297,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
     input_length = sample['In_lengths']
     target_length = sample['Out_lengths']
 
+    total_distance = 0
     loss = 0
     encoder_outputs, encoder_hidden = encoder(
         input_tensor, input_length)
@@ -290,6 +311,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
             decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
             dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
             eo = encoder_outputs[j].unsqueeze(1).contiguous()
+            out_plate = ''
             # Teacher forcing: Feed the target as the next input
             for di in range(tl):
                 decoder_output, dh = decoder(
@@ -297,6 +319,10 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
                 #print(decoder_output.shape, t[di].unsqueeze(0).shape)
                 loss += criterion(decoder_output, t[di].unsqueeze(0))
                 decoder_input = t[di].unsqueeze(0).unsqueeze(0)  # Teacher forcing
+                topv, topi = decoder_output.topk(1)
+                out_plate += idx_to_char[topi.squeeze().detach()]
+            print(out_plate)
+            total_distance += levenshtein(out_plate,sample['Out_plate']) - levenshtein(sample['In_plate'],sample['Out_plate'])
 
     else:
         # Without teacher forcing: use its own predictions as the next input
@@ -304,6 +330,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
             decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
             dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
             eo = encoder_outputs[j].unsqueeze(1).contiguous()
+            out_plate = ''
             for di in range(tl):
                 decoder_output, dh = decoder(
                     decoder_input, dh, eo)
@@ -311,9 +338,12 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
                 loss += criterion(decoder_output, t[di].unsqueeze(0))
                 topv, topi = decoder_output.topk(1)
                 decoder_input = topi.squeeze().detach()  # detach from history as input
+                out_plate += idx_to_char[decoder_input]
                 if decoder_input.item() == dataset.EOS_token:
                     break
                 decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
+            print(out_plate)
+            total_distance += levenshtein(out_plate,sample['Out_plate']) - levenshtein(sample['In_plate'],sample['Out_plate'])
     loss.backward()
 
     encoder_optimizer.step()
@@ -321,7 +351,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
 
     return loss.item()
 
-def evaluate(sample, encoder, decoder, criterion, device):
+def evaluate(sample, encoder, decoder, criterion, device, idx_to_char):
     encoder.eval()
     decoder.eval()
     input_tensor = sample['In_idxs'].to(device)
@@ -396,7 +426,7 @@ def showPlot(points,filename):
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,filename))
 
-def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, idx_to_char, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     train_losses = []
     val_losses = []
@@ -414,10 +444,10 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
     encoder.to(device)
     decoder.to(device)
     for epoch in range(epochs):
-        '''
+
         for i,sample in enumerate(tqdm.tqdm(iter(train_dataloader))):
             loss = train(sample, encoder,
-                         decoder, encoder_optimizer, decoder_optimizer, criterion, device)
+                         decoder, encoder_optimizer, decoder_optimizer, criterion, device, idx_to_char)
             train_print_loss_total += loss
             train_plot_loss_total += loss
 
@@ -436,7 +466,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
         '''
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
             loss = evaluate(sample, encoder,
-                         decoder, criterion, device)
+                         decoder, criterion, device, idx_to_char)
             val_print_loss_total += loss
             val_plot_loss_total += loss
 
@@ -452,7 +482,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                 val_plot_loss_total = 0
 
         showPlot(val_losses,'val_loss.png')
-
+        '''
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
@@ -537,7 +567,7 @@ encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(de
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
 
-trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device = device, print_every=250)
+trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device, dataset.idx_to_char, print_every=250)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
