@@ -476,8 +476,8 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                 train_plot_loss_total = 0
                 train_plot_dist_total = 0
 
-        showPlot(train_losses,'train_loss.png')
-        showPlot(train_distances,'train_distance.png')
+                showPlot(train_losses,'train_loss.png')
+                showPlot(train_distances,'train_distance.png')
 
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
             loss, dist = evaluate(sample, encoder,
@@ -503,8 +503,8 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
                 val_plot_loss_total = 0
                 val_plot_dist_total = 0
 
-        showPlot(val_losses,'val_loss.png')
-        showPlot(val_distances,'val_distance.png')
+                showPlot(val_losses,'val_loss.png')
+                showPlot(val_distances,'val_distance.png')
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
