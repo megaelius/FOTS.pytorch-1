@@ -533,7 +533,7 @@ encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(de
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
 
-trainIters(encoder1, attn_decoder1, train_dataloader, device = device, print_every=250)
+trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device = device, print_every=250)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
