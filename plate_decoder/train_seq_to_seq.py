@@ -476,7 +476,7 @@ if not Path(model_folder).is_dir():
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hidden_size = 128
+hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
