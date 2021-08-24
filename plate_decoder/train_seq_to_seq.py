@@ -137,7 +137,7 @@ class EncoderRNN(nn.Module):
         #outputs = outputs[:, :, :self.hidden_size] + outputs[:, : ,self.hidden_size:]
         #hidden = hidden.sum(dim=0).unsqueeze(0)
         # Return output and final hidden state
-        return outputs.contiguous(), hidden.contiguous()
+        return outputs, hidden
 
 # Luong attention layer
 class Attn(nn.Module):
@@ -213,7 +213,7 @@ class LuongAttnDecoderRNN(nn.Module):
         # Note: we run this one step (word) at a time
         # Get embedding of current input word
         embedded = self.embedding(input_step)
-        embedded = self.embedding_dropout(embedded).contiguous()
+        embedded = self.embedding_dropout(embedded)
         # Forward through unidirectional GRU
         print(embedded.shape,last_hidden.shape)
         rnn_output, hidden = self.gru(embedded, last_hidden)
@@ -288,8 +288,8 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
     if use_teacher_forcing:
         for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
             decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
-            dh = decoder_hidden[:,j,:].unsqueeze(1)
-            eo = encoder_outputs[j].unsqueeze(1)
+            dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
+            eo = encoder_outputs[j].unsqueeze(1).contiguous()
             # Teacher forcing: Feed the target as the next input
             for di in range(tl):
                 decoder_output, dh = decoder(
@@ -302,8 +302,8 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
         # Without teacher forcing: use its own predictions as the next input
         for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
             decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
-            dh = decoder_hidden[:,j,:].unsqueeze(1)
-            eo = encoder_outputs[j].unsqueeze(1)
+            dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
+            eo = encoder_outputs[j].unsqueeze(1).contiguous()
             for di in range(tl):
                 decoder_output, dh = decoder(
                     decoder_input, dh, eo)
