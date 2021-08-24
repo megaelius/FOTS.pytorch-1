@@ -421,10 +421,6 @@ def timeSince(since, percent):
 
 def showPlot(points,filename):
     plt.figure()
-    fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
-    loc = ticker.MultipleLocator(base=0.2)
-    ax.yaxis.set_major_locator(loc)
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,filename))
 
