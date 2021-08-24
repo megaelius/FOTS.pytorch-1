@@ -267,7 +267,8 @@ class GreedySearchDecoder(nn.Module):
 teacher_forcing_ratio = 0.5
 
 def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, device):
-
+    encoder.train()
+    decoder.train()
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
@@ -321,34 +322,35 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
     return loss.item()
 
 def evaluate(sample, encoder, decoder, criterion, device):
-
+    encoder.eval()
+    decoder.eval()
     input_tensor = sample['In_idxs'].to(device)
     target_tensor = sample['Out_idxs'].to(device)
     input_length = sample['In_lengths']
     target_length = sample['Out_lengths']
+    with torch.no_grad():
+        loss = 0
+        encoder_outputs, encoder_hidden = encoder(
+            input_tensor, input_length)
 
-    loss = 0
-    encoder_outputs, encoder_hidden = encoder(
-        input_tensor, input_length)
+        decoder_hidden = encoder_hidden
 
-    decoder_hidden = encoder_hidden
-
-    # Without teacher forcing: use its own predictions as the next input
-    for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
-        decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
-        dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
-        eo = encoder_outputs[j].unsqueeze(1).contiguous()
-        for di in range(tl):
-            decoder_output, dh = decoder(
-                decoder_input, dh, eo)
-            #print(decoder_output.shape, t[di].unsqueeze(0).shape)
-            loss += criterion(decoder_output, t[di].unsqueeze(0))
-            topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach()  # detach from history as input
-            if decoder_input.item() == dataset.EOS_token:
-                break
-            decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
-    return loss.item()
+        # Without teacher forcing: use its own predictions as the next input
+        for j,(t,tl) in enumerate(zip(target_tensor,target_length)):
+            decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
+            dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
+            eo = encoder_outputs[j].unsqueeze(1).contiguous()
+            for di in range(tl):
+                decoder_output, dh = decoder(
+                    decoder_input, dh, eo)
+                #print(decoder_output.shape, t[di].unsqueeze(0).shape)
+                loss += criterion(decoder_output, t[di].unsqueeze(0))
+                topv, topi = decoder_output.topk(1)
+                decoder_input = topi.squeeze().detach()  # detach from history as input
+                if decoder_input.item() == dataset.EOS_token:
+                    break
+                decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
+        return loss.item()
 
 ######################################################################
 # This is a helper function to print time elapsed and estimated time
@@ -406,7 +408,8 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
-    n_iters = epochs*len(dataloader)
+    train_iters = len(train_dataloader)
+    val_iters = len(val_dataloader)
     encoder.to(device)
     decoder.to(device)
     for epoch in range(epochs):
@@ -420,8 +423,8 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
             if (i+1)% print_every == 0:
                 train_print_loss_avg = train_print_loss_total / print_every
                 train_print_loss_total = 0
-                print('%s (%d %d%%) %.4f' % (timeSince(start, i / n_iters),
-                                             i, i / n_iters * 100,train_print_loss_avg))
+                print('%s (%d %d%%) %.4f' % (timeSince(start, i / train_iters),
+                                             i, i / train_iters * 100,train_print_loss_avg))
 
             if (i+1) % plot_every == 0:
                 train_plot_loss_avg = train_plot_loss_total / plot_every
@@ -439,8 +442,8 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
             if (i+1)% print_every == 0:
                 val_print_loss_avg = val_print_loss_total / print_every
                 val_print_loss_total = 0
-                print('%s (%d %d%%) %.4f' % (timeSince(start, i / n_iters),
-                                             i, i / n_iters * 100,val_print_loss_avg))
+                print('%s (%d %d%%) %.4f' % (timeSince(start, i / val_iters),
+                                             i, i / val_iters * 100,val_print_loss_avg))
 
             if (i+1) % plot_every == 0:
                 val_plot_loss_avg = val_plot_loss_total / plot_every
