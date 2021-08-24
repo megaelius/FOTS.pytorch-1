@@ -321,8 +321,7 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
                 decoder_input = t[di].unsqueeze(0).unsqueeze(0)  # Teacher forcing
                 topv, topi = decoder_output.topk(1)
                 out_plate += idx_to_char[topi.squeeze().detach()]
-            print(out_plate)
-            total_distance += levenshtein(out_plate,sample['Out_plate']) - levenshtein(sample['In_plate'],sample['Out_plate'])
+            total_distance += levenshtein(out_plate,sample['Out_plate'][j]) - levenshtein(sample['In_plate'][j],sample['Out_plate'][j])
 
     else:
         # Without teacher forcing: use its own predictions as the next input
@@ -342,14 +341,13 @@ def train(sample, encoder, decoder, encoder_optimizer, decoder_optimizer, criter
                 if decoder_input.item() == dataset.EOS_token:
                     break
                 decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
-            print(out_plate)
-            total_distance += levenshtein(out_plate,sample['Out_plate']) - levenshtein(sample['In_plate'],sample['Out_plate'])
+            total_distance += levenshtein(out_plate,sample['Out_plate'][j]) - levenshtein(sample['In_plate'][j],sample['Out_plate'][j])
     loss.backward()
 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item()
+    return loss.item(), total_distance
 
 def evaluate(sample, encoder, decoder, criterion, device, idx_to_char):
     encoder.eval()
@@ -360,6 +358,7 @@ def evaluate(sample, encoder, decoder, criterion, device, idx_to_char):
     target_length = sample['Out_lengths']
     with torch.no_grad():
         loss = 0
+        total_distance = 0
         encoder_outputs, encoder_hidden = encoder(
             input_tensor, input_length)
 
@@ -370,6 +369,7 @@ def evaluate(sample, encoder, decoder, criterion, device, idx_to_char):
             decoder_input = torch.tensor([[dataset.SOS_token]], device=device)
             dh = decoder_hidden[:,j,:].unsqueeze(1).contiguous()
             eo = encoder_outputs[j].unsqueeze(1).contiguous()
+            out_plate = ''
             for di in range(tl):
                 decoder_output, dh = decoder(
                     decoder_input, dh, eo)
@@ -377,10 +377,12 @@ def evaluate(sample, encoder, decoder, criterion, device, idx_to_char):
                 loss += criterion(decoder_output, t[di].unsqueeze(0))
                 topv, topi = decoder_output.topk(1)
                 decoder_input = topi.squeeze().detach()  # detach from history as input
+                out_plate += idx_to_char[decoder_input]
                 if decoder_input.item() == dataset.EOS_token:
                     break
                 decoder_input = decoder_input.unsqueeze(0).unsqueeze(0)
-        return loss.item()
+            total_distance += levenshtein(out_plate,sample['Out_plate'][j]) - levenshtein(sample['In_plate'][j],sample['Out_plate'][j])
+        return loss.item(), total_distance
 
 ######################################################################
 # This is a helper function to print time elapsed and estimated time
@@ -446,7 +448,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
     for epoch in range(epochs):
 
         for i,sample in enumerate(tqdm.tqdm(iter(train_dataloader))):
-            loss = train(sample, encoder,
+            loss,dist = train(sample, encoder,
                          decoder, encoder_optimizer, decoder_optimizer, criterion, device, idx_to_char)
             train_print_loss_total += loss
             train_plot_loss_total += loss
@@ -465,7 +467,7 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
         showPlot(train_losses,'train_loss.png')
         '''
         for i,sample in enumerate(tqdm.tqdm(iter(val_dataloader))):
-            loss = evaluate(sample, encoder,
+            loss, dist = evaluate(sample, encoder,
                          decoder, criterion, device, idx_to_char)
             val_print_loss_total += loss
             val_plot_loss_total += loss
