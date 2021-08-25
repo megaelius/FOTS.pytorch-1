@@ -525,6 +525,7 @@ def demo(encoder, decoder, dataloader):
                 eo = encoder_outputs[j].unsqueeze(1)
                 # Teacher forcing: Feed the target as the next input
                 for di in range(tl):
+                    print(dh.shape)
                     decoder_output, dh = decoder(
                         decoder_input, dh, eo)
                     topv, topi = decoder_output.data.topk(1)
