@@ -424,7 +424,7 @@ def showPlot(points,filename):
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,filename))
 
-def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, idx_to_char, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, idx_to_char, model_folder, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     train_losses = []
     train_distances = []
@@ -501,6 +501,9 @@ def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, devic
 
                 showPlot(val_losses,'val_loss.png')
                 showPlot(val_distances,'val_distance.png')
+
+        torch.save(encoder,os.path.join(model_folder,'weights_encoder.pt'))
+        torch.save(decoder,os.path.join(model_folder,'weights_decoder.pt'))
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -581,13 +584,13 @@ if not Path(model_folder).is_dir():
     Path(model_folder).mkdir()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-'''
+
 hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
 attn_model = 'dot'
 attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
 
-trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device, dataset.idx_to_char, print_every=16, plot_every = 4)
+trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device, dataset.idx_to_char, model_folder, print_every=16, plot_every = 4)
 
 torch.save(encoder1,os.path.join(model_folder,'weights_encoder.pt'))
 torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
@@ -596,3 +599,4 @@ encoder1 = torch.load(os.path.join(model_folder,'weights_encoder.pt'), map_locat
 attn_decoder1 = torch.load(os.path.join(model_folder,'weights_decoder.pt'), map_location = device)
 print(encoder1, attn_decoder1)
 demo(encoder1, attn_decoder1, val_dataloader)
+'''
