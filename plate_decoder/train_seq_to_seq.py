@@ -510,8 +510,8 @@ import numpy as np
 def demo(encoder, decoder, dataloader):
     with torch.no_grad():
         for sample in iter(dataloader):
-            input_tensor = sample['In_idxs'].squeeze(0).to(device)
-            input_length = sample['In_lengths'].squeeze(0)
+            input_tensor = sample['In_idxs'].to(device)
+            input_length = sample['In_lengths']
 
             encoder_outputs, encoder_hidden = encoder(
                 input_tensor, input_length)
