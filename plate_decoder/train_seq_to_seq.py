@@ -224,7 +224,7 @@ class LuongAttnDecoderRNN(nn.Module):
         rnn_output = rnn_output.squeeze(0)
         context = context.squeeze(1)
         concat_input = torch.cat((rnn_output, context), 1)
-        print(rnn_output.shape, context.shape, concat_input.shape)
+        
         concat_output = torch.tanh(self.concat(concat_input))
         # Predict next word using Luong eq. 6
         output = self.out(concat_output)
