@@ -580,7 +580,7 @@ if not Path(model_folder).is_dir():
     Path(model_folder).mkdir()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+'''
 hidden_size = 256
 encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
 attn_model = 'dot'
@@ -593,5 +593,4 @@ torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 '''
 encoder1 = torch.load(os.path.join(model_folder,'weights_encoder.pt'), map_location = device)
 attn_decoder1 = torch.load(os.path.join(model_folder,'weights_decoder.pt'), map_location = device)
-evaluate(encoder1, attn_decoder1, val_dataloader)
-'''
+demo(encoder1, attn_decoder1, val_dataloader)
