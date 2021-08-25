@@ -137,7 +137,6 @@ class PlateRNN(torch.nn.Module):
         return output
 
 def confusable_plates(plate):
-    'JA6801' -> 'UAGBOI'
     confusions = [['3','8','B','R'],
                   ['I','1','T','L'],
                   ['7','T'],
