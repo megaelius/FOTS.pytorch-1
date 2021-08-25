@@ -203,7 +203,7 @@ class LuongAttnDecoderRNN(nn.Module):
         self.embedding = nn.Embedding(output_size, hidden_size)
         self.embedding_dropout = nn.Dropout(dropout)
         self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout), bidirectional = True)
-        self.concat = nn.Linear(hidden_size * 4, hidden_size)
+        self.concat = nn.Linear(hidden_size * 2 * n_layers, hidden_size)
         self.out = nn.Linear(hidden_size, output_size)
 
         self.attn = Attn(attn_model, hidden_size)
@@ -567,7 +567,7 @@ print(dataset[0])
 seed = 1234
 bs = 64
 num_workers = 2
-epochs = 25
+epochs = 3
 
 n=len(dataset)
 n_train = int(n*0.7)
@@ -585,10 +585,10 @@ if not Path(model_folder).is_dir():
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hidden_size = 256
-encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 2).to(device)
+hidden_size = 64
+encoder1 = EncoderRNN(len(dataset.idx_to_char), hidden_size, n_layers = 4).to(device)
 attn_model = 'dot'
-attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 2).to(device)
+attn_decoder1 = LuongAttnDecoderRNN(attn_model, hidden_size, len(dataset.idx_to_char), n_layers = 4).to(device)
 
 trainIters(encoder1, attn_decoder1, train_dataloader, val_dataloader, epochs, device, dataset.idx_to_char, model_folder, print_every=16, plot_every = 4)
 
