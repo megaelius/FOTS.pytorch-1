@@ -594,4 +594,5 @@ torch.save(attn_decoder1,os.path.join(model_folder,'weights_decoder.pt'))
 '''
 encoder1 = torch.load(os.path.join(model_folder,'weights_encoder.pt'), map_location = device)
 attn_decoder1 = torch.load(os.path.join(model_folder,'weights_decoder.pt'), map_location = device)
+print(encoder1, attn_decoder1)
 demo(encoder1, attn_decoder1, val_dataloader)
