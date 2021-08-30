@@ -224,7 +224,7 @@ class LuongAttnDecoderRNN(nn.Module):
         rnn_output = rnn_output.squeeze(0)
         context = context.squeeze(1)
         concat_input = torch.cat((rnn_output, context), 1)
-        
+
         concat_output = torch.tanh(self.concat(concat_input))
         # Predict next word using Luong eq. 6
         output = self.out(concat_output)
@@ -567,8 +567,8 @@ dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/al
 print(dataset[0])
 seed = 1234
 bs = 64
-num_workers = 2
-epochs = 3
+num_workers = 4
+epochs = 5
 
 n=len(dataset)
 n_train = int(n*0.7)
