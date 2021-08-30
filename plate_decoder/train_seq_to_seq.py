@@ -424,6 +424,7 @@ def showPlot(points,filename):
     plt.figure()
     plt.plot(points)
     plt.savefig(os.path.join(model_folder,filename))
+    plt.close()
 
 def trainIters(encoder, decoder, train_dataloader, val_dataloader, epochs, device, idx_to_char, model_folder, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
