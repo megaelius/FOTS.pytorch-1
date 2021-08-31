@@ -28,3 +28,8 @@ _ext
 /data/*.py
 /weights/*.h5
 /weights/e2e-mlt.h5
+
+#rroialign
+rroi_align/build
+rroi_align/dist
+rroi_align/rroi_align.egg-info
