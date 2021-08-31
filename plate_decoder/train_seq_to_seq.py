@@ -568,7 +568,7 @@ print(dataset[0])
 seed = 1234
 bs = 64
 num_workers = 4
-epochs = 5
+epochs = 10
 
 n=len(dataset)
 n_train = int(n*0.7)
