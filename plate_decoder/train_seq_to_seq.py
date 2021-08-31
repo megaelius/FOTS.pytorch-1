@@ -562,8 +562,8 @@ def demo(encoder, decoder, dataloader):
 #    encoder and decoder are initialized and run ``trainIters`` again.
 #
 
-#dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
-dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
+dataset = PlateCorrectionDataset('../../../Data/PlateSet.pkl','../data/alphabet.txt')
+#dataset = PlateCorrectionDataset('/mnt/DATA/eabad/Data/PlateSet.pkl','../data/alphabet.txt')
 print(dataset[0])
 seed = 1234
 bs = 64
