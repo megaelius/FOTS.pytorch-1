@@ -71,7 +71,7 @@ def frame_from_video(video):
     i = 0
     while video.isOpened():
         success, frame = video.read()
-        if not i % 10:
+        if not i % 16:
             if success:
                 yield frame
             else:
