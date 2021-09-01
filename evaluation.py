@@ -310,13 +310,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cuda', type=int, default=1)
     parser.add_argument('--model', default='./weights/FOTS_280000.h5')
-    parser.add_argument('--plate_model', default='../out/Model_1')
+    parser.add_argument('--plate_model', default='../out/Model_Bidi')
 
     # parser.add_argument('-model', default='./weights/e2e-mlt.h5')
     parser.add_argument('--segm_thresh', type=float,default=0.5)
     parser.add_argument('--test_folder')
     parser.add_argument('--videos_folder')
-    parser.add_argument('--output', default='./data/ICDAR2015')
+    parser.add_argument('--output', default='../out')
 
     font2 = ImageFont.truetype("./tools/Arial-Unicode-Regular.ttf", 18)
 
