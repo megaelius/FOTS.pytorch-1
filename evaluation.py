@@ -147,7 +147,7 @@ def confusable_plates(plate):
                   ['G','C'],
                   ['M','N'],
                   ['Y','V'],
-                  ['V','W']
+                  ['V','W'],
                   ['U','J'],
                   ['K','X'],
                   ['E','F'],
