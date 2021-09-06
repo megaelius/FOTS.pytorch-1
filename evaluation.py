@@ -166,6 +166,7 @@ def confusable_plates(plate):
                 conf_map[key] += values
             else:
                 conf_map[key] = values
+    print(conf_map)
     #initiallize list with empty character
     n = 1
     out = [('',0)]
