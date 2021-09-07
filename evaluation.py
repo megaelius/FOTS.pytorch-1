@@ -137,7 +137,8 @@ class PlateRNN(torch.nn.Module):
         return output
 
 def confusable_plates(plate):
-    confusions = [['3','8','B','R'],
+    confusions = [['3','8','B'],
+                  ['B','R','8'],
                   ['I','1','T','L'],
                   ['7','T'],
                   ['A','4'],
@@ -166,7 +167,16 @@ def confusable_plates(plate):
                 conf_map[key] += values
             else:
                 conf_map[key] = values
+
     print(conf_map)
+    for c in conf_map:
+        s = f'{c} &'
+        for ch in conf_map[c]:
+            s+=f' {ch},'
+        s=s[:-1]
+        s+=' \\\\'
+        print(s)
+    
     #initiallize list with empty character
     n = 1
     out = [('',0)]
@@ -214,7 +224,7 @@ def confusable_plates(plate):
     return out
 
 
-def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output_folder=None):
+def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,debug=False):
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
     images = np.asarray([im_resized], dtype=float)
     images /= 128
@@ -233,7 +243,7 @@ def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output
     segm = segm.squeeze(0)
 
     draw2 = np.copy(im_resized)
-    boxes =  get_boxes(segm, rbox, angle_pred, args.segm_thresh)
+    boxes =  get_boxes(segm, rbox, angle_pred, segm_thresh)
 
     img = Image.fromarray(draw2)
     draw = ImageDraw.Draw(img)
@@ -264,6 +274,8 @@ def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output
             plate = det_text
             confidence = conf
         '''
+    if debug:
+        print(texts)
     with torch.no_grad():
         texts_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in texts]
         if len(texts_idx) > 0:
@@ -273,13 +285,20 @@ def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output
             val, idx = torch.max(torch.nn.Sigmoid()(output),dim=0)
             plate = texts[idx]
             confidence = val
+            if debug:
+                print(torch.nn.Sigmoid()(output))
 
     if plate is not None:
         if plate not in plateset:
             plates_and_edits = confusable_plates(plate)
+            if debug:
+                print(plates_and_edits)
             possible_plates = set(plates_and_edits.keys())
             plates = possible_plates.intersection(plateset)
             if len(plates) > 0:
+                if debug:
+                    for p in plates:
+                        print(f'{p}: {plates_and_edits[p]}')
                 plate = None
                 min = 100
                 for p in plates:
@@ -290,6 +309,8 @@ def recognize_plate(im,net,platenet,plateset,char_to_idx,device,path=None,output
             else:
                 plate = None
                 confidence = 0
+        if debug:
+            print(plate)
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -392,7 +413,7 @@ if __name__ == '__main__':
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
 
-                        plate, confidence = recognize_plate(frame,net,platenet,plateset,char_to_idx,device)
+                        plate, confidence = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
                         #print(plate)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
@@ -408,7 +429,7 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence = recognize_plate(im,net,platenet,plateset,char_to_idx,device,path,args.output)
+                    plate, confidence = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
                     #print(plate, confidence)
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])

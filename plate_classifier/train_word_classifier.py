@@ -1,7 +1,8 @@
 import os
 import torch
-import argparse
+import random
 import pickle
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -51,12 +52,21 @@ class PlateClassificationDataset(Dataset):
         self.char_to_idx = {c:i+1 for i,c in enumerate(self.vocabulary)}
         self.idx_to_char = [c for c in enumerate(self.vocabulary)]
 
+    def random_transform_word(self,word):
+        char_list = list(word)
+        #iterate over characters and randomly change them
+        for i in range(len(char_list)):
+            #randomly change the character with 0.1 probability
+            if random.random() <= 0.05:
+                char_list[i] = random.sample(self.vocabulary,1)[0]
+        return ''.join(char_list)
+
     def __len__(self):
         return len(self.words)
 
     def __getitem__(self, idx):
         label = self.labels[idx]
-        word = str(self.words[idx])
+        word = self.random_transform_word(str(self.words[idx]))
         idxs = [self.char_to_idx[c] for c in word]
 
         sample = {"Word": word, "Indexes": idxs, "Class": label}
@@ -176,6 +186,8 @@ if __name__ == '__main__':
     bs = 1024
     num_workers = 2
     epochs = 25
+    embedding_dim = 128
+    hidden_size = 32
 
     dataset = PlateClassificationDataset(args.data_path)
     n=len(dataset)
@@ -190,8 +202,8 @@ if __name__ == '__main__':
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    #model = PlateRNN(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2, hidden_size = 2, output_size = 1, bidirectional = True)
-    model = PlateNet(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2)
+    model = PlateRNN(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = embedding_dim, hidden_size = hidden_size, output_size = 1, bidirectional = True)
+    #model = PlateNet(num_embeddings = len(dataset.vocabulary) + 1, embedding_dim = 2)
     model = model.to(device)
 
     criterion = torch.nn.BCEWithLogitsLoss(reduction='sum')
