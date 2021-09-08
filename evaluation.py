@@ -225,6 +225,7 @@ def confusable_plates(plate):
 
 
 def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,debug=False):
+    times = {'FOTS':0,'Classifier':0,'Refinement':0}
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
     images = np.asarray([im_resized], dtype=float)
     images /= 128
@@ -287,7 +288,10 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             confidence = val
             if debug:
                 print(torch.nn.Sigmoid()(output))
-
+    '''
+    Recognition refinement
+    '''
+    '''
     if plate is not None:
         if plate not in plateset:
             plates_and_edits = confusable_plates(plate)
@@ -311,6 +315,7 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
                 confidence = 0
         if debug:
             print(plate)
+    '''
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -323,7 +328,7 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             Path(os.path.join(output_folder, path.split('/')[-3])).mkdir()
         out_filename = os.path.join(output_folder, path.split('/')[-3], os.path.basename(path))
         cv2.imwrite(out_filename, im)
-    return plate, float(confidence)
+    return plate, float(confidence), times
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -429,7 +434,7 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
+                    plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
                     #print(plate, confidence)
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])
