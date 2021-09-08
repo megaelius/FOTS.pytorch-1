@@ -418,7 +418,7 @@ if __name__ == '__main__':
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
 
-                        plate, confidence = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
+                        plate, confidence, times = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
                         #print(plate)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
