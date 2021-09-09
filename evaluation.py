@@ -443,6 +443,8 @@ if __name__ == '__main__':
                         df['Frame'].append(k)
                         df['Pred_plate'].append(plate)
                         df['Confidence'].append(confidence)
+                        for name in times:
+                            times_df[name].append(times[name])
         elif args.test_folder:
             print('Processing Photos')
             for model in sorted(os.listdir(args.test_folder)):
@@ -466,10 +468,10 @@ if __name__ == '__main__':
                     df['Confidence'].append(confidence)
 
     pd_df = pd.DataFrame.from_dict(df,orient='columns')
+    pd_times_df = pd.DataFrame.from_dict(times_df,orient='columns')
     if args.videos_folder:
         pd_df.to_csv(os.path.join(args.output_data,'results_videos.csv'),index=False)
+        pd_times_df.to_csv(os.path.join(args.output_data,'results_times_videos.csv'), index=False)
     elif args.test_folder:
         pd_df.to_csv(os.path.join(args.output_data,'results.csv'),index=False)
-
-    pd_times_df = pd.DataFrame.from_dict(times_df,orient='columns')
-    pd_times_df.to_csv(os.path.join(args.output_data,'results_times.csv'), index=False)
+        pd_times_df.to_csv(os.path.join(args.output_data,'results_times_photos.csv'), index=False)
