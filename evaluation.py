@@ -225,13 +225,15 @@ def confusable_plates(plate):
 
 
 def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,debug=False):
-    times = {'FOTS':0,'Classifier':0,'Refinement':0}
+    times = {'FOTS':0,'Classifier':0,'Refinement':0,'Detections':0}
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
     images = np.asarray([im_resized], dtype=float)
     images /= 128
     images -= 1
     im_data = net_utils.np_to_variable(images.transpose(0, 3, 1, 2))
     im_data = im_data.to(device)
+
+    init_FOTS = time.time()
     seg_pred, rboxs, angle_pred, features = net(im_data)
 
     rbox = rboxs[0].data.cpu()[0].numpy()           # 转变成h,w,c
@@ -243,13 +245,13 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
     segm = seg_pred[0].data.cpu()[0].numpy()
     segm = segm.squeeze(0)
 
-    draw2 = np.copy(im_resized)
     boxes =  get_boxes(segm, rbox, angle_pred, segm_thresh)
 
-    img = Image.fromarray(draw2)
-    draw = ImageDraw.Draw(img)
+    if path is not None and output_folder is not None:
+        draw2 = np.copy(im_resized)
+        img = Image.fromarray(draw2)
+        draw = ImageDraw.Draw(img)
 
-    platenet.eval()
     out_boxes = []
     texts = []
     plate = None
@@ -265,9 +267,10 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
         if len(det_text) == 0:
           continue
         texts.append(det_text)
-        width, height = draw.textsize(det_text, font=font2)
-        center =  [box[0], box[1]]
-        draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
+        if path is not None and output_folder is not None:
+            width, height = draw.textsize(det_text, font=font2)
+            center =  [box[0], box[1]]
+            draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
         out_boxes.append(box)
         #print(det_text, conf, dec_s)
         '''
@@ -275,8 +278,12 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             plate = det_text
             confidence = conf
         '''
+    finish_FOTS = time.time()
+
     if debug:
         print(texts)
+
+    init_PlateClassifier = time.time()
     with torch.no_grad():
         texts_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in texts]
         if len(texts_idx) > 0:
@@ -288,10 +295,12 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             confidence = val
             if debug:
                 print(torch.nn.Sigmoid()(output))
+    finish_PlateClassifier = time.time()
+
     '''
     Recognition refinement
     '''
-    '''
+    init_RR = time.time()
     if plate is not None:
         if plate not in plateset:
             plates_and_edits = confusable_plates(plate)
@@ -315,7 +324,13 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
                 confidence = 0
         if debug:
             print(plate)
-    '''
+    finish_RR = time.time()
+
+    times['FOTS'] = finish_FOTS-init_FOTS
+    times['Classifier'] = finish_PlateClassifier-init_PlateClassifier
+    times['Refinement'] = finish_RR-init_RR
+    times['Detections'] = len(texts)
+
     if path is not None and output_folder is not None:
         im = np.array(img)
         for box in out_boxes:
@@ -328,6 +343,7 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             Path(os.path.join(output_folder, path.split('/')[-3])).mkdir()
         out_filename = os.path.join(output_folder, path.split('/')[-3], os.path.basename(path))
         cv2.imwrite(out_filename, im)
+
     return plate, float(confidence), times
 
 def count_parameters(model):
@@ -338,13 +354,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cuda', type=int, default=1)
     parser.add_argument('--model', default='./weights/FOTS_280000.h5')
-    parser.add_argument('--plate_model', default='../out/Model_Bidi')
+    parser.add_argument('--plate_model', default='../out/Model_Augmentation')
 
     # parser.add_argument('-model', default='./weights/e2e-mlt.h5')
     parser.add_argument('--segm_thresh', type=float,default=0.5)
     parser.add_argument('--test_folder')
     parser.add_argument('--videos_folder')
-    parser.add_argument('--output', default='../out')
+    parser.add_argument('--output')
 
     font2 = ImageFont.truetype("./tools/Arial-Unicode-Regular.ttf", 18)
 
@@ -386,6 +402,7 @@ if __name__ == '__main__':
     platenet.to(device)
 
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
+    times_df = {'FOTS':[],'Classifier':[],'Refinement':[],'Detections':[]}
     with torch.no_grad():
         if args.videos_folder:
             print('Processing Videos')
@@ -434,7 +451,12 @@ if __name__ == '__main__':
                 for image_name in tqdm.tqdm(sorted(os.listdir(lateral_path))):
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
-                    plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
+                    if args.output:
+                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
+                    else:
+                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
+                    for name in times:
+                        times_df[name].append(times[name])
                     #print(plate, confidence)
                     df['Model'].append(model)
                     df['Video'].append(image_name[4:-9])
@@ -447,3 +469,6 @@ if __name__ == '__main__':
         pd_df.to_csv(os.path.join(args.output,'results_videos.csv'),index=False)
     elif args.test_folder:
         pd_df.to_csv(os.path.join(args.output,'results.csv'),index=False)
+
+    pd_times_df = pd.DataFrame.from_dict(times_df,orient='columns')
+    pd_times_df.to_csv('results_times.csv', index=False)
