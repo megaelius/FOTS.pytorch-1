@@ -361,6 +361,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_folder')
     parser.add_argument('--videos_folder')
     parser.add_argument('--output')
+    parser.add_argument('--output_data',default = '../out')
 
     font2 = ImageFont.truetype("./tools/Arial-Unicode-Regular.ttf", 18)
 
@@ -466,9 +467,9 @@ if __name__ == '__main__':
 
     pd_df = pd.DataFrame.from_dict(df,orient='columns')
     if args.videos_folder:
-        pd_df.to_csv(os.path.join(args.output,'results_videos.csv'),index=False)
+        pd_df.to_csv(os.path.join(args.output_data,'results_videos.csv'),index=False)
     elif args.test_folder:
-        pd_df.to_csv(os.path.join(args.output,'results.csv'),index=False)
+        pd_df.to_csv(os.path.join(args.output_data,'results.csv'),index=False)
 
     pd_times_df = pd.DataFrame.from_dict(times_df,orient='columns')
-    pd_times_df.to_csv('results_times.csv', index=False)
+    pd_times_df.to_csv(os.path.join(args.output_data,'results_times.csv'), index=False)
