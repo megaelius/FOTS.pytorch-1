@@ -403,7 +403,7 @@ if __name__ == '__main__':
     platenet.to(device)
 
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
-    times = {'FOTS':[],'Classifier':[],'Refinement':[],'Detections':[],'Width':[],'Height':[]}
+    times_df = {'FOTS':[],'Classifier':[],'Refinement':[],'Detections':[],'Width':[],'Height':[]}
     with torch.no_grad():
         if args.videos_folder:
             print('Processing Videos')
