@@ -225,8 +225,8 @@ def confusable_plates(plate):
 
 
 def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,debug=False):
-    times = {'FOTS':0,'Classifier':0,'Refinement':0,'Detections':0}
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
+    times = {'FOTS':0,'Classifier':0,'Refinement':0,'Detections':0,'Width':ratio_w,'Height':ratio_h}
     images = np.asarray([im_resized], dtype=float)
     images /= 128
     images -= 1
@@ -403,7 +403,7 @@ if __name__ == '__main__':
     platenet.to(device)
 
     df = {'Model':[],'Video':[],'Frame':[],'Pred_plate':[],'Confidence':[]}
-    times_df = {'FOTS':[],'Classifier':[],'Refinement':[],'Detections':[]}
+    times = {'FOTS':[],'Classifier':[],'Refinement':[],'Detections':[],'Width':[],'Height':[]}
     with torch.no_grad():
         if args.videos_folder:
             print('Processing Videos')
