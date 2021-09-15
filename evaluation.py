@@ -223,17 +223,14 @@ def confusable_plates(plate):
     '''
     return out
 
-
-def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,debug=False):
+def stage_1_FOTS(im,net,segm_thresh):
     im_resized, (ratio_h, ratio_w) = resize_image(im, scale_up=False)
-    times = {'FOTS':0,'Classifier':0,'Refinement':0,'Detections':0,'Width':ratio_w,'Height':ratio_h}
     images = np.asarray([im_resized], dtype=float)
     images /= 128
     images -= 1
     im_data = net_utils.np_to_variable(images.transpose(0, 3, 1, 2))
     im_data = im_data.to(device)
 
-    init_FOTS = time.time()
     seg_pred, rboxs, angle_pred, features = net(im_data)
 
     rbox = rboxs[0].data.cpu()[0].numpy()           # 转变成h,w,c
@@ -246,16 +243,8 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
     segm = segm.squeeze(0)
 
     boxes =  get_boxes(segm, rbox, angle_pred, segm_thresh)
-
-    if path is not None and output_folder is not None:
-        draw2 = np.copy(im_resized)
-        img = Image.fromarray(draw2)
-        draw = ImageDraw.Draw(img)
-
     out_boxes = []
     texts = []
-    plate = None
-    confidence = 0
 
     for box in boxes:
 
@@ -267,23 +256,13 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
         if len(det_text) == 0:
           continue
         texts.append(det_text)
-        if path is not None and output_folder is not None:
-            width, height = draw.textsize(det_text, font=font2)
-            center =  [box[0], box[1]]
-            draw.text((center[0], center[1]), det_text, fill = (0,255,0),font=font2)
         out_boxes.append(box)
         #print(det_text, conf, dec_s)
-        '''
-        if is_plate(det_text) and conf > confidence:
-            plate = det_text
-            confidence = conf
-        '''
-    finish_FOTS = time.time()
+    return im_resized, ratio_h, ratio_w, out_boxes, texts
 
-    if debug:
-        print(texts)
-
-    init_PlateClassifier = time.time()
+def stage_2_classifier(texts,platenet,char_to_idx,device,debug=False):
+    plate = None
+    confidence = 0
     with torch.no_grad():
         texts_idx = [torch.tensor(index_chars(w,char_to_idx)) for w in texts]
         if len(texts_idx) > 0:
@@ -292,15 +271,13 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
             output = platenet(sequences,input_lengths)
             val, idx = torch.max(torch.nn.Sigmoid()(output),dim=0)
             plate = texts[idx]
+            not_refined_plate = plate
             confidence = val
             if debug:
                 print(torch.nn.Sigmoid()(output))
-    finish_PlateClassifier = time.time()
+    return not_refined_plate, plate, confidence
 
-    '''
-    Recognition refinement
-    '''
-    init_RR = time.time()
+def stage_3_recognition_refinement(plate,confidence,plateset,debug=False):
     if plate is not None:
         if plate not in plateset:
             plates_and_edits = confusable_plates(plate)
@@ -324,25 +301,80 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
                 confidence = 0
         if debug:
             print(plate)
+    return plate, confidence
+
+def stage_4_display_results(im,boxes,texts,not_refined_plate,plate,converter,font2,path,output_folder,video):
+    draw2 = np.copy(im)
+    img = Image.fromarray(draw2)
+    draw = ImageDraw.Draw(img)
+    for box, text in zip(boxes,texts):
+        width, height = draw.textsize(text, font=font2)
+        center =  [box[0], box[1]]
+        if text != not_refined_plate:
+            draw.text((center[0], center[1]), text, fill = (0,255,0),font=font2)
+
+        else:
+            draw.text((center[0], center[1]), text, fill = (0,0,255),font=font2)
+
+    im = np.array(img)
+    for box, text in zip(boxes,texts):
+        pts  = box[0:8]
+        pts = pts.reshape(4, -1)
+        if text != not_refined_plate:
+            draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
+        else:
+            draw_box_points(im, pts, color=(0, 0, 255), thickness=1)
+
+    #cv2.imshow('img', im)
+    if not video:
+        if not os.path.isdir(os.path.join(output_folder, path.split('/')[-3])):
+            Path(os.path.join(output_folder, path.split('/')[-3])).mkdir()
+        out_filename = os.path.join(output_folder, path.split('/')[-3], os.path.basename(path))
+    else:
+        out_filename = os.path.join(output_folder, path)
+    cv2.imwrite(out_filename, im)
+
+
+def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path=None,output_folder=None,video = True,debug=False):
+
+    times = {'FOTS':0,'Classifier':0,'Refinement':0,'Detections':0,'Width':0,'Height':0}
+
+    '''
+    FOTS
+    '''
+    init_FOTS = time.time()
+    im_resized, ratio_h, ratio_w, out_boxes, texts = stage_1_FOTS(im,net,segm_thresh)
+    finish_FOTS = time.time()
+
+    if debug:
+        print(texts)
+
+    '''
+    Aircraft registration classifier
+    '''
+    init_PlateClassifier = time.time()
+    not_refined_plate, plate, confidence = stage_2_classifier(texts,platenet,char_to_idx,device,debug)
+    finish_PlateClassifier = time.time()
+
+    '''
+    Recognition refinement
+    '''
+    init_RR = time.time()
+    plate, confidence = stage_3_recognition_refinement(plate,confidence,plateset)
     finish_RR = time.time()
+
+    '''
+    Display of results on top of image
+    '''
+    if path is not None and output_folder is not None:
+        stage_4_display_results(im_resized,out_boxes,texts,not_refined_plate,plate,converter,font2,path,output_folder,video)
 
     times['FOTS'] = finish_FOTS-init_FOTS
     times['Classifier'] = finish_PlateClassifier-init_PlateClassifier
     times['Refinement'] = finish_RR-init_RR
     times['Detections'] = len(texts)
-
-    if path is not None and output_folder is not None:
-        im = np.array(img)
-        for box in out_boxes:
-            pts  = box[0:8]
-            pts = pts.reshape(4, -1)
-            draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
-
-        #cv2.imshow('img', im)
-        if not os.path.isdir(os.path.join(output_folder, path.split('/')[-3])):
-            Path(os.path.join(output_folder, path.split('/')[-3])).mkdir()
-        out_filename = os.path.join(output_folder, path.split('/')[-3], os.path.basename(path))
-        cv2.imwrite(out_filename, im)
+    times['Height'] = ratio_h
+    times['Width'] = ratio_w
 
     return plate, float(confidence), times
 
@@ -435,8 +467,10 @@ if __name__ == '__main__':
                     annotations_name = annotations_name.item()[11:-4]
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
                     for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
-
-                        plate, confidence, times = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
+                        if args.output:
+                            plate, confidence, times = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,f'{video_name}_{k}.png',args.output)
+                        else:
+                            plate, confidence, times = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
                         #print(plate)
                         df['Model'].append(model)
                         df['Video'].append(annotations_name)
@@ -455,9 +489,9 @@ if __name__ == '__main__':
                     path = os.path.join(lateral_path,image_name)
                     im = cv2.imread(path)
                     if args.output:
-                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output)
+                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,path,args.output,video=False)
                     else:
-                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device)
+                        plate, confidence, times = recognize_plate(im,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,video=False)
                     for name in times:
                         times_df[name].append(times[name])
                     #print(plate, confidence)
