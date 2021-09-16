@@ -73,11 +73,11 @@ def is_plate(s):
 def normalize2(s,form: str):
     return normalize(form,s)
 
-def frame_from_video(video):
+def frame_from_video(video,frate):
     i = 0
     while video.isOpened():
         success, frame = video.read()
-        if not i % 16:
+        if not i % frate:
             if success:
                 yield frame
             else:
@@ -407,6 +407,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_folder')
     parser.add_argument('--videos_folder')
     parser.add_argument('--output')
+    parser.add_argument('--frate', type=int, default=16)
     parser.add_argument('--output_data',default = '../out')
 
     font2 = ImageFont.truetype("./tools/Arial-Unicode-Regular.ttf", 18)
@@ -480,7 +481,7 @@ if __name__ == '__main__':
                         continue
                     annotations_name = annotations_name.item()[11:-4]
                     print(f'Processing: {model}:{annotations_name}, with {num_frames} frames')
-                    for k,frame in tqdm.tqdm(enumerate(frame_from_video(video))):
+                    for k,frame in tqdm.tqdm(enumerate(frame_from_video(video,args.frate))):
                         if args.output:
                             plate, confidence, times = recognize_plate(frame,net,args.segm_thresh,platenet,plateset,converter,font2,char_to_idx,device,f'{video_name}_{k}.png',args.output)
                         else:
