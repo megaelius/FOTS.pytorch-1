@@ -289,12 +289,12 @@ def stage_3_recognition_refinement(plate,confidence,plateset,debug=False):
                 if debug:
                     for p in plates:
                         print(f'{p}: {plates_and_edits[p]}')
+                not_refined_plate = plate
                 plate = None
                 min = 100
                 for p in plates:
                     edits = plates_and_edits[p]
                     if edits < min:
-                        not_refined_plate = plate
                         plate = p
                         min = edits
             else:
@@ -322,6 +322,7 @@ def stage_4_display_results(im,boxes,texts,not_refined_plate,plate,converter,fon
 
         else:
             draw.text((center[0], center[1]), text, fill = (0,0,255),font=font2)
+            draw.text((center[0], center[1] + height), plate, fill = (0,0,255),font=font2)
 
     im = np.array(img)
     for box, text in zip(boxes,texts):
