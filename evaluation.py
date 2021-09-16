@@ -261,6 +261,7 @@ def stage_1_FOTS(im,net,segm_thresh):
     return im_resized, ratio_h, ratio_w, out_boxes, texts
 
 def stage_2_classifier(texts,platenet,char_to_idx,device,debug=False):
+    not_refined_plate = None
     plate = None
     confidence = 0
     with torch.no_grad():
