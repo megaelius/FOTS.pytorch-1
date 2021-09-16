@@ -301,6 +301,8 @@ def stage_3_recognition_refinement(plate,confidence,plateset,debug=False):
                 not_refined_plate = None
                 plate = None
                 confidence = 0
+        else:
+            not_refined_plate = plate
         if debug:
             print(plate)
     else:
