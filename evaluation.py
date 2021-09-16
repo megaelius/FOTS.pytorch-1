@@ -2,6 +2,12 @@
 Created on 2019-06-30
 
 @author: chenjun2hao
+
+Modified from 2021-07 to 2021-09
+
+@author: megaelius
+@email: abad.elias00@gmail.com
+
 '''
 
 import os
