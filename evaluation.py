@@ -318,20 +318,20 @@ def stage_4_display_results(im,boxes,texts,not_refined_plate,plate,converter,fon
         width, height = draw.textsize(text, font=font2)
         center =  [box[0], box[1]]
         if text != not_refined_plate:
-            draw.text((center[0], center[1]), text, fill = (0,255,0),font=font2)
+            draw.text((center[0], center[1]), text, fill = (255,0, 0),font=font2)
 
         else:
-            draw.text((center[0], center[1]), text, fill = (0,0,255),font=font2)
-            draw.text((center[0], center[1] + height), plate, fill = (0,0,255),font=font2)
+            draw.text((center[0], center[1]), text, fill = (0,255,0),font=font2)
+            draw.text((center[0], center[1] + height), plate, fill = (0,255,0),font=font2)
 
     im = np.array(img)
     for box, text in zip(boxes,texts):
         pts  = box[0:8]
         pts = pts.reshape(4, -1)
         if text != not_refined_plate:
-            draw_box_points(im, pts, color=(0, 255, 0), thickness=1)
+            draw_box_points(im, pts, color=(255,0, 0), thickness=1)
         else:
-            draw_box_points(im, pts, color=(0, 0, 255), thickness=1)
+            draw_box_points(im, pts, color=(0,255,0), thickness=1)
 
     #cv2.imshow('img', im)
     if not video:
