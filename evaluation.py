@@ -272,11 +272,10 @@ def stage_2_classifier(texts,platenet,char_to_idx,device,debug=False):
             output = platenet(sequences,input_lengths)
             val, idx = torch.max(torch.nn.Sigmoid()(output),dim=0)
             plate = texts[idx]
-            not_refined_plate = plate
             confidence = val
             if debug:
                 print(torch.nn.Sigmoid()(output))
-    return not_refined_plate, plate, confidence
+    return plate, confidence
 
 def stage_3_recognition_refinement(plate,confidence,plateset,debug=False):
     if plate is not None:
@@ -295,14 +294,19 @@ def stage_3_recognition_refinement(plate,confidence,plateset,debug=False):
                 for p in plates:
                     edits = plates_and_edits[p]
                     if edits < min:
+                        not_refined_plate = plate
                         plate = p
                         min = edits
             else:
+                not_refined_plate = None
                 plate = None
                 confidence = 0
         if debug:
             print(plate)
-    return plate, confidence
+    else:
+        not_refined_plate = None
+
+    return plate, not_refined_plate, confidence
 
 def stage_4_display_results(im,boxes,texts,not_refined_plate,plate,converter,font2,path,output_folder,video):
     draw2 = np.copy(im)
@@ -354,14 +358,14 @@ def recognize_plate(im,net,segm_thresh,platenet,plateset,converter,font2,char_to
     Aircraft registration classifier
     '''
     init_PlateClassifier = time.time()
-    not_refined_plate, plate, confidence = stage_2_classifier(texts,platenet,char_to_idx,device,debug)
+    plate, confidence = stage_2_classifier(texts,platenet,char_to_idx,device,debug)
     finish_PlateClassifier = time.time()
 
     '''
     Recognition refinement
     '''
     init_RR = time.time()
-    plate, confidence = stage_3_recognition_refinement(plate,confidence,plateset)
+    plate, not_refined_plate, confidence = stage_3_recognition_refinement(plate,confidence,plateset)
     finish_RR = time.time()
 
     '''
